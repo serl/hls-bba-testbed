@@ -18,6 +18,8 @@ cd vlc
 
 apt-get -y install git libtool build-essential pkg-config autoconf
 
+git submodule init && git submodule update
+
 ./bootstrap
 ./configure --disable-chromecast
 
