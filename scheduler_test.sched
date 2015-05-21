@@ -1,0 +1,3 @@
+client0 0 echo $(hostname) $(date +%s) > /vagrant/log/scheduler_test_client0.log
+server 0 echo $(hostname) $(date +%s) > /vagrant/log/scheduler_test_server.log
+
