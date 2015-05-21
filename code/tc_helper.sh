@@ -6,11 +6,6 @@
 
 SUDO='sudo -n'
 DEV='eth1'
-DEFAULT_BW=10Gbit
-
-function setup {
-  set_bw $DEFAULT_BW
-}
 
 function destroy {
   echo "Deleting root qdisc"
@@ -36,7 +31,7 @@ function show {
 function watch_buffer_size {
   oldline=''
   while true; do
-    line=$($SUDO tc -s qdisc show dev $DEV | grep backlog)
+    line=$("$0" show | grep backlog)
     if [ "$line" != "$oldline" ]; then
       echo $(date +%s.%N) $line
     fi
@@ -45,15 +40,16 @@ function watch_buffer_size {
   done
 }
 
+function log_buffer_size {
+  "$0" watch_buffer_size >> /vagrant/log/router_buffer.log &
+}
+
 function usage {
-  echo "Usage: $0 {setup|destroy|show|watch_buffer_size|set_bw [bw]}"
+  echo "Usage: $0 {set_bw [bw]|destroy|show|watch_buffer_size}"
   exit 1
 }
 
 case "$1" in
-  setup)
-    setup
-    ;;
   destroy)
     destroy
     ;;
@@ -69,6 +65,9 @@ case "$1" in
     ;;
   watch_buffer_size)
     watch_buffer_size
+    ;;
+  log_buffer_size)
+    log_buffer_size
     ;;
   *)
     usage

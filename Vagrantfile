@@ -32,7 +32,6 @@ Vagrant.configure(2) do |config|
     end
     
     server.vm.provision "shell", path: "scripts/setup_ssh_keys.sh", privileged: false
-    #server.vm.provision "shell", inline: "/vagrant/code/start_router.sh", run: "always", privileged: false
     server.vm.provision "shell", inline: "/vagrant/code/start_server.sh", run: "always", privileged: false
   end
 
