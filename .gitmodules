@@ -1,0 +1,3 @@
+[submodule "code/vlc"]
+	path = code/vlc
+	url = https://github.com/serl/vlc.git
