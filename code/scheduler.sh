@@ -15,7 +15,8 @@ function run_delayed {
 	delay=$(($1 + $start_time - $now))
 	shift
 	sleep $delay 2>/dev/null
-	eval "$@"
+	echo $(date +%s.%N) $me RUN $@
+	eval "$@ &"
 }
 
 while read -r line; do
