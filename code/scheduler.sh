@@ -24,6 +24,9 @@ while read -r line; do
 		delay=${BASH_REMATCH[1]}
 		command=${BASH_REMATCH[2]}
 		run_delayed $delay "$command" &
+	elif [[ $line =~ \#eval[[:space:]]+(.*) ]]; then
+		command=${BASH_REMATCH[1]}
+		eval $command
 	fi
-done < <(grep -E "^$me +[0-9]+" /dev/stdin)
+done < /dev/stdin
 

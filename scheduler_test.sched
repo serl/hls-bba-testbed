@@ -1,3 +1,5 @@
-client0 0 echo $(hostname) $(date +%s) > /vagrant/log/scheduler_test_client0.log
-server 0 echo $(hostname) $(date +%s) > /vagrant/log/scheduler_test_server.log
+#next line will be executed IMMEDIATELY, as the peer receives the schedule, variables are preserved, as you can guess
+#eval LOGDIR=/vagrant/log/scheduler_test ; mkdir -p $LOGDIR
+client0 0 echo $(hostname) $(date +%s) > $LOGDIR/scheduler_test_client0.log
+server 0 echo $(hostname) $(date +%s) > $LOGDIR/scheduler_test_server.log
 
