@@ -1,34 +1,35 @@
+#eval LOGDIR=/vagrant/log/iperf ; mkdir -p $LOGDIR
 
 #server 0 /vagrant/code/tc_helper.sh log_buffer_size
-client0 0 iperf -s &>/vagrant/log/iperf_s.log & echo $! > /tmp/pid_iperf_server
-server 0 truncate -s0 /vagrant/log/iperf_c.log
+client0 0 iperf -s &>$LOGDIR/iperf_s.log & echo $! > /tmp/pid_iperf_server
+server 0 truncate -s0 $LOGDIR/iperf_c.log
 
 server 0 /vagrant/code/tc_helper.sh set_bw 300kbit
 server 0 sudo rmmod tcp_probe ; sudo modprobe tcp_probe port=5001 full=1
-server 2 sudo cat /proc/net/tcpprobe &>/vagrant/log/tcp_probe_300kbit.log & echo $! > /tmp/pid_tcpprobe_cat
-server 2 sudo tcpdump -i eth1 -s0 -w /vagrant/log/tcp_probe_300kbit.pcap 2>&1 & echo $! > /tmp/pid_tcpdump
-server 5 iperf -c client0 -t 300 >>/vagrant/log/iperf_c.log
+server 2 sudo cat /proc/net/tcpprobe &>$LOGDIR/tcp_probe_300kbit.log & echo $! > /tmp/pid_tcpprobe_cat
+server 2 sudo tcpdump -i eth1 -s0 -w $LOGDIR/tcp_probe_300kbit.pcap 2>&1 & echo $! > /tmp/pid_tcpdump
+server 5 iperf -c client0 -t 300 >>$LOGDIR/iperf_c.log
 server 327 sudo kill -SIGTERM $(cat /tmp/pid_tcpprobe_cat) & sudo kill -SIGTERM $(cat /tmp/pid_tcpdump)
 
 server 330 /vagrant/code/tc_helper.sh set_bw 1mbit
 server 330 sudo rmmod tcp_probe ; sudo modprobe tcp_probe port=5001 full=1
-server 332 sudo cat /proc/net/tcpprobe &>/vagrant/log/tcp_probe_1mbit.log & echo $! > /tmp/pid_tcpprobe_cat
-server 332 sudo tcpdump -i eth1 -s0 -w /vagrant/log/tcp_probe_1mbit.pcap 2>&1 & echo $! > /tmp/pid_tcpdump
-server 335 iperf -c client0 -t 300 >>/vagrant/log/iperf_c.log
+server 332 sudo cat /proc/net/tcpprobe &>$LOGDIR/tcp_probe_1mbit.log & echo $! > /tmp/pid_tcpprobe_cat
+server 332 sudo tcpdump -i eth1 -s0 -w $LOGDIR/tcp_probe_1mbit.pcap 2>&1 & echo $! > /tmp/pid_tcpdump
+server 335 iperf -c client0 -t 300 >>$LOGDIR/iperf_c.log
 server 657 sudo kill -SIGTERM $(cat /tmp/pid_tcpprobe_cat) & sudo kill -SIGTERM $(cat /tmp/pid_tcpdump)
 
 server 660 /vagrant/code/tc_helper.sh set_bw 5mbit
 server 660 sudo rmmod tcp_probe ; sudo modprobe tcp_probe port=5001 full=1
-server 662 sudo cat /proc/net/tcpprobe &>/vagrant/log/tcp_probe_5mbit.log & echo $! > /tmp/pid_tcpprobe_cat
-server 662 sudo tcpdump -i eth1 -s0 -w /vagrant/log/tcp_probe_5mbit.pcap 2>&1 & echo $! > /tmp/pid_tcpdump
-server 665 iperf -c client0 -t 120 >>/vagrant/log/iperf_c.log
+server 662 sudo cat /proc/net/tcpprobe &>$LOGDIR/tcp_probe_5mbit.log & echo $! > /tmp/pid_tcpprobe_cat
+server 662 sudo tcpdump -i eth1 -s0 -w $LOGDIR/tcp_probe_5mbit.pcap 2>&1 & echo $! > /tmp/pid_tcpdump
+server 665 iperf -c client0 -t 120 >>$LOGDIR/iperf_c.log
 server 797 sudo kill -SIGTERM $(cat /tmp/pid_tcpprobe_cat) & sudo kill -SIGTERM $(cat /tmp/pid_tcpdump)
 
 server 800 /vagrant/code/tc_helper.sh set_bw 10mbit
 server 800 sudo rmmod tcp_probe ; sudo modprobe tcp_probe port=5001 full=1
-server 802 sudo cat /proc/net/tcpprobe &>/vagrant/log/tcp_probe_10mbit.log & echo $! > /tmp/pid_tcpprobe_cat
-server 802 sudo tcpdump -i eth1 -s0 -w /vagrant/log/tcp_probe_10mbit.pcap 2>&1 & echo $! > /tmp/pid_tcpdump
-server 805 iperf -c client0 -t 60 >>/vagrant/log/iperf_c.log
+server 802 sudo cat /proc/net/tcpprobe &>$LOGDIR/tcp_probe_10mbit.log & echo $! > /tmp/pid_tcpprobe_cat
+server 802 sudo tcpdump -i eth1 -s0 -w $LOGDIR/tcp_probe_10mbit.pcap 2>&1 & echo $! > /tmp/pid_tcpdump
+server 805 iperf -c client0 -t 60 >>$LOGDIR/iperf_c.log
 server 877 sudo kill -SIGTERM $(cat /tmp/pid_tcpprobe_cat) & sudo kill -SIGTERM $(cat /tmp/pid_tcpdump)
 
 client0 880 kill -SIGTERM $(cat /tmp/pid_iperf_server)
