@@ -20,7 +20,7 @@ function run_delayed {
 }
 
 while read -r line; do
-	if [[ $line =~ $me[[:space:]]+([0-9]+)[[:space:]]+(.*) ]]; then
+	if [[ $line =~ ^$me[[:space:]]+([0-9]+)[[:space:]]+(.*)$ ]]; then
 		delay=${BASH_REMATCH[1]}
 		command=${BASH_REMATCH[2]}
 		run_delayed $delay "$command" &
