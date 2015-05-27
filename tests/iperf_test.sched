@@ -35,5 +35,6 @@ server 802 /vagrant/code/tc_helper.sh watch_buffer_size &>$LOGDIR/iperf_10mbit_b
 server 805 iperf -c client0 -t 60 >>$LOGDIR/iperf_c.log
 server 877 sudo kill -SIGTERM $(cat /tmp/pid_tcpprobe_cat) & sudo kill -SIGTERM $(cat /tmp/pid_tcpdump) & sudo kill -SIGTERM $(cat /tmp/pid_buffersize)
 
+server 880 /vagrant/code/tc_helper.sh destroy
 client0 880 kill -SIGTERM $(cat /tmp/pid_iperf_server)
 

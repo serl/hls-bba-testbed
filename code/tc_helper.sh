@@ -13,15 +13,17 @@ function destroy {
 }
 
 function set_bw {
-  packets=10
+  packets=200
   if [ "$2" ]; then
     packets="$2"
   fi
+  delay=200ms
+  if [ "$3" ]; then
+    delay="$3"
+  fi
   bw="$1"
-  echo "Adding/replacing bw qdisc with rate $bw (buffer of $packets packets)"
-  #$NETNS_EXEC $S_NS tc qdisc replace dev $S_IF root tbf rate $bw burst 2k latency 1ms
-  #$NETNS_EXEC $S_NS tc qdisc replace dev $S_IF root tbf rate $bw burst 2k limit 100k
-  $SUDO tc qdisc replace dev $DEV root netem rate "$bw" limit "$packets"
+  echo "Adding/replacing netem qdisc with rate $bw, delay $delay (buffer of $packets packets)"
+  $SUDO tc qdisc replace dev $DEV root netem rate "$bw" limit "$packets" delay "$delay"
 }
 
 function show {
@@ -56,7 +58,7 @@ case "$1" in
     if [ -z "$2" ]; then
       usage
     else
-      set_bw "$2" "$3"
+      set_bw "$2" "$3" "$4"
     fi
     ;;
   watch_buffer_size)
