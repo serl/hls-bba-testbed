@@ -15,6 +15,7 @@ Vagrant.configure(2) do |config|
   config.vm.provision :shell, path: "scripts/bootstrap.sh"
   config.vm.provision :shell, path: "scripts/install_nodejs.sh"
   config.vm.provision :shell, path: "scripts/compile_vlc.sh"
+  config.vm.provision "shell", inline: "ntpdate pool.ntp.org", run: "always"
 
   config.vm.define "server" do |server|
     server.vm.hostname = "server"
