@@ -5,6 +5,12 @@ schedule="$(cat /dev/stdin)"
 hosts=$(echo "$schedule" | grep --extended-regexp --only-matching "^[^#\\ ]+" | sort | uniq)
 hosts_count=$(echo $hosts | wc -w)
 master_delay=$(($hosts_count * 2 + 2))
+
+for host in $hosts; do
+	echo "Updating $host clock..."
+	ssh -oStrictHostKeyChecking=no $host "sudo ntpdate pool.ntp.org"
+done
+
 start_time=$(($master_delay + $(date +%s)))
 echo "Execution delayed by $master_delay seconds"
 
