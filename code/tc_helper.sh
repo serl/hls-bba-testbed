@@ -26,6 +26,12 @@ function set_bw {
   $SUDO tc qdisc replace dev $DEV root netem rate "$bw" limit "$packets" delay "$delay"
 }
 
+function set_delay {
+  delay="$1"
+  echo "Adding/replacing netem qdisc with delay $delay"
+  $SUDO tc qdisc replace dev $DEV root netem delay "$delay"
+}
+
 function show {
   $SUDO tc -s qdisc show dev $DEV
 }
@@ -43,7 +49,7 @@ function watch_buffer_size {
 }
 
 function usage {
-  echo "Usage: $0 {set_bw [bw]|destroy|show|watch_buffer_size}"
+  echo "Usage: $0 {set_bw [bw]|set_delay [delay]|destroy|show|watch_buffer_size}"
   exit 1
 }
 
@@ -59,6 +65,13 @@ case "$1" in
       usage
     else
       set_bw "$2" "$3" "$4"
+    fi
+    ;;
+  set_delay)
+    if [ -z "$2" ]; then
+      usage
+    else
+      set_delay "$2"
     fi
     ;;
   watch_buffer_size)
