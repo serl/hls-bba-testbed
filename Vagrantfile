@@ -15,7 +15,8 @@ Vagrant.configure(2) do |config|
   config.vm.provision :shell, path: "scripts/bootstrap.sh"
   config.vm.provision :shell, path: "scripts/install_nodejs.sh"
   config.vm.provision :shell, path: "scripts/compile_vlc.sh"
-  config.vm.provision "shell", inline: "ntpdate pool.ntp.org", run: "always"
+  config.vm.provision :shell, inline: "ntpdate pool.ntp.org", run: "always"
+  config.vm.provision :shell, inline: "ethtool -K eth1 tx off gso off sg off gro off", run: "always"
 
   config.vm.define "server" do |server|
     server.vm.hostname = "server"
@@ -32,8 +33,8 @@ Vagrant.configure(2) do |config|
       server.vm.provision :shell, inline: "echo #{ip} #{hostname} >> /etc/hosts", run: "always"
     end
     
-    server.vm.provision "shell", path: "scripts/setup_ssh_keys.sh", privileged: false
-    server.vm.provision "shell", inline: "/vagrant/code/start_server.sh", run: "always", privileged: false
+    server.vm.provision :shell, path: "scripts/setup_ssh_keys.sh", privileged: false
+    server.vm.provision :shell, inline: "/vagrant/code/start_server.sh", run: "always", privileged: false
   end
 
   (0...clients).each do |i|
