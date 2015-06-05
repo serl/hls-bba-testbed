@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plotSession(session, export = False):
+def plotSession(session, export = False, plot_start=0, plot_end=None):
 	log = session.VLClogs[0]
+	if plot_end is None:
+		plot_end = log.duration
 	vlc_t, vlc_events = log.get_events(time_relative_to=session)
 	tcpprobe_t, tcpprobe_events = session.tcpprobe.get_events(time_relative_to=session)
 	bandwidth_buffer_t, bandwidth_buffer_packets = session.bandwidth_buffer.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
@@ -15,7 +17,7 @@ def plotSession(session, export = False):
 	bits_limit = 0
 
 	for stream in session.streams:
-		ax_bits.plot([0, log.duration], [stream]*2, alpha=0.4, color='black', linestyle='--')
+		ax_bits.plot([plot_start, plot_end], [stream]*2, alpha=0.4, color='black', linestyle='--')
 		if bits_limit < stream:
 			bits_limit = stream + 100000
 
@@ -29,9 +31,9 @@ def plotSession(session, export = False):
 				bw_values.append(bw_values[-1])
 			bw_t.append(time)
 			bw_values.append(value)
-		bw_t.append(log.duration)
+		bw_t.append(plot_end)
 		bw_values.append(bw_values[-1])
-		ax_bits.plot(bw_t, bw_values, color='purple', linewidth=2, label='bw limit')
+		ax_bits.plot(bw_t, bw_values, marker='.', markersize=3, linestyle=':', color='purple', linewidth=2, label='bw limit')
 
 		if bits_limit < max(bw_values):
 			bits_limit = max(bw_values) 
@@ -48,7 +50,7 @@ def plotSession(session, export = False):
 	stream_requests = [log.streams[evt.downloading_stream] if evt.downloading_stream is not None else None for evt in vlc_events]
 	ax_bits.plot(vlc_t, stream_requests, marker='.', markersize=3, linestyle=':', color='green', label='stream requested')
 
-	ax_bits.axis([0, log.duration, 0, bits_limit])
+	ax_bits.axis([plot_start, plot_end, 0, bits_limit])
 
 	ax_buffer = ax_bits.twinx()
 	buffer_size = [evt.buffer for evt in vlc_events]
@@ -56,17 +58,17 @@ def plotSession(session, export = False):
 	ax_buffer.set_ylabel('buffer (s)', color='blue')
 	for tl in ax_buffer.get_yticklabels():
 		tl.set_color('blue')
-	ax_buffer.axis([0, log.duration, 0, max(buffer_size)+5])
+	ax_buffer.axis([plot_start, plot_end, 0, max(buffer_size)+5])
 
 	ax_bits.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
-	ax_packets = fig.add_subplot(2, 1, 2)
+	ax_packets = fig.add_subplot(2, 1, 2, sharex=ax_bits)
 	ax_packets.set_ylabel('packets')
 
 	#buffer
 	ax_packets.plot(bandwidth_buffer_t, bandwidth_buffer_packets, color='blue', label='bw buffer')
 	#ax_packets.plot(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
-	ax_packets.axis([0, log.duration, 0, None])
+	ax_packets.axis([plot_start, plot_end, 0, None])
 
 	#tcpprobe
 	cwnd = [evt.snd_cwnd for evt in tcpprobe_events]
@@ -78,7 +80,7 @@ def plotSession(session, export = False):
 	#ax_msec.set_ylabel('RTT (ms)', color='green')
 	#for tl in ax_msec.get_yticklabels():
 	#	tl.set_color('green')
-	#ax_msec.axis([0, log.duration, min(rtt)*0.8, max(rtt)*1.2])
+	#ax_msec.axis([plot_start, plot_end, min(rtt)*0.8, max(rtt)*1.2])
 
 	ax_packets.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
@@ -212,7 +214,7 @@ def plotIperf(session, export = False, plot_start=0, plot_end=None):
 		plot_id += 1
 		if tshark:
 			#packet size
-			ax_bytes = fig.add_subplot(3, 1, plot_id)
+			ax_bytes = fig.add_subplot(3, 1, plot_id, sharex=ax_packets)
 			#ax_bytes.plot(tshark_framelen_t[h], tshark_framelen[h], color='blue', alpha=0.7)
 			ax_bytes.plot(tshark_framelen_t[h], tshark_framelen[h], marker='.', markersize=2, linestyle=':', color='blue', alpha=0.7)
 			ax_bytes.set_ylabel('packet size (B)', color='blue')
