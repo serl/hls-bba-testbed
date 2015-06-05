@@ -104,12 +104,12 @@ def plotCompareSessions(grouped_sessions, export = False):
 	plots = [ 
 			{
 				'title': 'Average bitrate',
-				'fn': lambda s: s.logs[0].get_avg_bitrate(),
+				'fn': lambda s: s.VLClogs[0].get_avg_bitrate(),
 				'show_bitrates': True
 			},
 			{
 				'title': 'Average bitrate (excl. first 25 segments)',
-				'fn': lambda s: s.logs[0].get_avg_bitrate(skip=25),
+				'fn': lambda s: s.VLClogs[0].get_avg_bitrate(skip=25),
 				'show_bitrates': True
 			},
 #			{
@@ -207,9 +207,10 @@ def plotIperf(session, export = False, plot_start=0, plot_end=None):
 
 	ax_packets.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=4, mode="expand", borderaxespad=0.)
 
-	if tshark:
-		for h in ('sender', 'receiver'):
-			plot_id += 1
+	bw_text = ''
+	for h in ('sender', 'receiver'):
+		plot_id += 1
+		if tshark:
 			#packet size
 			ax_bytes = fig.add_subplot(3, 1, plot_id)
 			#ax_bytes.plot(tshark_framelen_t[h], tshark_framelen[h], color='blue', alpha=0.7)
@@ -230,6 +231,11 @@ def plotIperf(session, export = False, plot_start=0, plot_end=None):
 
 			#bw
 			ax_bytes.text(plot_end*.99, max(tshark_framelen[h]), h+' bw: '+str(session.__dict__['bandwidth_'+h])+'bit/s', ha='right')
+		else:
+			bw_text += h+' bw: '+str(session.__dict__['bandwidth_'+h])+'bit/s '
+
+	if bw_text is not '':
+		ax_msec.text(plot_end, max(rtt)*1.2, bw_text, ha='right')
 
 	if export:
 		fig.set_size_inches(22,12)

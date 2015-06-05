@@ -304,10 +304,10 @@ class IperfSession(Session):
 		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(dirname, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
 		for h in ('bandwidth', 'delay'):
 			funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(dirname, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
-		if tshark:
-			for h in ('sender', 'receiver'):
+		for h in ('sender', 'receiver'):
+			funcs.append({'fn': IperfSession.get_bandwidth, 'args': (os.path.join(dirname, h+'.pcap'),), 'return_attr': 'bandwidth_'+h})
+			if tshark:
 				funcs.append({'fn': TsharkAnalysis.parse, 'args': (os.path.join(dirname, h+'.pcap'), '192.168.200.10'), 'return_attr': 'tshark_'+h})
-				funcs.append({'fn': IperfSession.get_bandwidth, 'args': (os.path.join(dirname, h+'.pcap'),), 'return_attr': 'bandwidth_'+h})
 
 		Parallelize(funcs, return_obj=inst).run()
 		inst.add_log(inst.tcpprobe)
