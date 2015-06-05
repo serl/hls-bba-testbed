@@ -6,7 +6,7 @@ from pylibs.plot import plotSession
 if __name__ == "__main__":
 	filenames = sys.argv[1:]
 	assert len(filenames)
-	export = False
+	export = len(filenames) > 1
 	if filenames[0] == 'export':
 		export = True
 		filenames = sys.argv[2:]
