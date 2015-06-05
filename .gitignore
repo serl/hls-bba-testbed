@@ -5,4 +5,4 @@
 !/scripts/ssh/.gitkeep
 /code/http_server/static/*
 !/code/http_server/static/.gitkeep
-
+*.pyc

@@ -5,11 +5,20 @@
 # yourusername ALL=(ALL) NOPASSWD: /sbin/tc *
 
 SUDO='sudo -n'
-DEV='eth1'
+DEVS='eth2'
+
+function run_command {
+  command=$1
+  shift
+  arguments=$@
+  for dev in $DEVS; do
+  	$SUDO tc -s qdisc $command dev $dev $arguments
+  done
+}
 
 function destroy {
   echo "Deleting root qdisc"
-  $SUDO tc qdisc del dev $DEV root
+  run_command del root
 }
 
 function set_bw {
@@ -17,23 +26,19 @@ function set_bw {
   if [ "$2" ]; then
     packets="$2"
   fi
-  delay=200ms
-  if [ "$3" ]; then
-    delay="$3"
-  fi
   bw="$1"
-  echo "Adding/replacing netem qdisc with rate $bw, delay $delay (buffer of $packets packets)"
-  $SUDO tc qdisc replace dev $DEV root netem rate "$bw" limit "$packets" delay "$delay"
+  echo "Adding/replacing netem qdisc with rate $bw (buffer of $packets packets)"
+  run_command replace root netem rate "$bw" limit "$packets"
 }
 
 function set_delay {
   delay="$1"
   echo "Adding/replacing netem qdisc with delay $delay"
-  $SUDO tc qdisc replace dev $DEV root netem delay "$delay"
+  run_command replace root netem delay "$delay"
 }
 
 function show {
-  $SUDO tc -s qdisc show dev $DEV
+  run_command show
 }
 
 function watch_buffer_size {
@@ -64,7 +69,7 @@ case "$1" in
     if [ -z "$2" ]; then
       usage
     else
-      set_bw "$2" "$3" "$4"
+      set_bw "$2" "$3"
     fi
     ;;
   set_delay)
@@ -79,5 +84,6 @@ case "$1" in
     ;;
   *)
     usage
+    exit
 esac
 

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source $(dirname $0)/colors.sh
+
 me=$(hostname)
 if [ "$2" ]; then
 	me=$2
@@ -15,7 +17,7 @@ function run_delayed {
 	delay=$(($1 + $start_time - $now))
 	shift
 	sleep $delay 2>/dev/null
-	echo $(date +%s.%N) $me RUN $@
+	echo -e "${IBlack}$(date +%s.%N) $me RUN $@${Color_Off}"
 	eval "$@ &"
 }
 
