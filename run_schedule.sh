@@ -7,7 +7,7 @@ for schedule_file in "$@"; do
 		schedule_file="$schedule_file/jobs.sched"
 	fi
 	echo -e "${IBlue}Running $schedule_file...${Color_Off}"
-	vagrant ssh server --command '/vagrant/code/master_scheduler.sh' < $schedule_file
+	vagrant ssh server --command '/vagrant/code/master_scheduler.sh' -- -T < $schedule_file
 	sleep 1
 	echo
 done
