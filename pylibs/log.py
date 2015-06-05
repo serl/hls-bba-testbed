@@ -200,7 +200,7 @@ class TcpProbeLog(Log):
 	def parse(cls, filename):
 		inst = cls()
 		boot_re = re.compile('^([\d\.]+) BOOT CONFIG_HZ=(\d+)$')
-		line_re = re.compile('^([\d\.]+) ([\d\.:a-f\[\]]+) ([\d\.:a-f\[\]]+) (\d+) (0x[\da-f]+) (0x[\da-f]+) (\d+) (\d+) (\d+) (\d+) (\d+)$')
+		line_re = re.compile('^([\d\.]+) ([\d\.:a-f\[\]]+):(\d+) ([\d\.:a-f\[\]]+):(\d+) (\d+) (0x[\da-f]+) (0x[\da-f]+) (\d+) (\d+) (\d+) (\d+) (\d+)$')
 		start_time = None
 		hz_value = 1
 		with open(filename, "r") as contents:
@@ -216,15 +216,17 @@ class TcpProbeLog(Log):
 					evt = LogEvent()
 					evt.t = float(match.group(1)) + start_time
 					evt.src = match.group(2)
-					evt.dst = match.group(3)
-					evt.packet_len = int(match.group(4))
-					evt.next_seq = match.group(5)
-					evt.unack_seq = match.group(6)
-					evt.snd_cwnd = int(match.group(7))
-					evt.ssthresh = int(match.group(8))
-					evt.snd_wnd = int(match.group(9))
-					evt.srtt = int(match.group(10))*1000/hz_value
-					evt.rcv_wnd = int(match.group(11))
+					evt.src_port = int(match.group(3))
+					evt.dst = match.group(4)
+					evt.dst_port = int(match.group(5))
+					evt.packet_len = int(match.group(6))
+					evt.next_seq = match.group(7)
+					evt.unack_seq = match.group(8)
+					evt.snd_cwnd = int(match.group(9))
+					evt.ssthresh = int(match.group(10))
+					evt.snd_wnd = int(match.group(11))
+					evt.srtt = int(match.group(12))*1000/hz_value
+					evt.rcv_wnd = int(match.group(13))
 					inst.events[evt.t] = evt
 					continue
 
