@@ -10,7 +10,7 @@ function timestamp() {
 }
 
 morgan.token('timestamp', function(req, res) { return timestamp(); });
-app.use(morgan(':timestamp :method :url :status :res[content-length] - :response-time ms'));
+app.use(morgan(':timestamp :method :url :status :res[content-length] - :response-time ms (connection: :req[connection])'));
 
 app.use('/static', express.static(path.join(__dirname, 'static')));
 
