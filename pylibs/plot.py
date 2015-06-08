@@ -1,5 +1,20 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
+
+def show(fig, export):
+	if export:
+		if isinstance(export, basestring):
+			export = [export]
+		for filename in export:
+			if filename.endswith('.pickle'):
+				with open(filename, 'w') as f:
+					pickle.dump(fig, f)
+			else:
+				fig.set_size_inches(22,12)
+				fig.savefig(filename, bbox_inches='tight')
+	else:
+		plt.show()
 
 def plotSession(session, export = False, plot_start=0, plot_end=None):
 	log = session.VLClogs[0]
@@ -69,7 +84,7 @@ def plotSession(session, export = False, plot_start=0, plot_end=None):
 	ax_packets.plot(bandwidth_buffer_t, bandwidth_buffer_packets, color='blue', label='bw buffer')
 	#ax_packets.plot(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
 
-	for fourtuple, tcpp in session.tcpprobe.split().iteritems():
+	for fourtuple, tcpp in log.tcpprobe.split().iteritems():
 		tcpp_t, tcpp_events = tcpp.get_events(time_relative_to=session)
 		#tcpprobe
 		cwnd = [evt.snd_cwnd for evt in tcpp_events]
@@ -89,11 +104,7 @@ def plotSession(session, export = False, plot_start=0, plot_end=None):
 	handles, labels = ax_packets.get_legend_handles_labels()
 	ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
-	if export:
-		fig.set_size_inches(22,12)
-		fig.savefig(export, bbox_inches='tight')
-	else:
-		plt.show()
+	show(fig, export)
 
 	plt.close()
 
@@ -255,11 +266,7 @@ def plotIperf(session, export = False, plot_start=0, plot_end=None):
 	if bw_text is not '':
 		ax_msec.text(plot_end, max(rtt)*1.2, bw_text, ha='right')
 
-	if export:
-		fig.set_size_inches(22,12)
-		fig.savefig(export, bbox_inches='tight')
-	else:
-		plt.show()
+	show(fig, export)
 
 	plt.close()
 

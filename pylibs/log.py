@@ -55,6 +55,7 @@ class VLCLog(Log):
 		self.streams = ()
 		self._composition_streams_id = ()
 		self.composition = ()
+		self.tcpprobe = None
 
 	def _fill_composition(self):
 		self.composition = tuple(self.streams[n] for n in self._composition_streams_id)
@@ -163,7 +164,7 @@ class VLCSession(Session):
 	def parse(cls, dirname):
 		inst = cls()
 		funcs = []
-		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(dirname, 'cwnd.log'),), 'return_attr': 'tcpprobe'}) #TODO support multiple clients
+		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(dirname, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
 		for h in ('bandwidth', 'delay'):
 			funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(dirname, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
 
@@ -186,7 +187,8 @@ class VLCSession(Session):
 					for client in inst.clients:
 						log_filename = os.path.join(dirname, client['host'] + '_vlc.log')
 						try:
-							inst._addvlclog(log_filename)
+							log = inst._addvlclog(log_filename)
+							log.tcpprobe = inst.tcpprobe.filter_by_ip(client['host'])
 						except Exception, e:
 							print traceback.format_exc()
 					continue
@@ -213,7 +215,13 @@ class TcpProbeLog(Log):
 			instances[(evt.src, evt.src_port, evt.dst, evt.dst_port)].events[t] = evt
 		return instances
 
-	def get_by_ip(self, ip):
+	def filter_by_ip(self, ip):
+		ip_re = re.compile('^\d+\.\d+\.\d+\.\d+$')
+		client_re = re.compile('^client(\d+)$')
+		if not ip_re.match(ip):
+			match = client_re.match(ip)
+			if match:
+				ip = '192.168.200.' + str(10 + int(match.group(1)))
 		inst = self.__class__()
 		inst.events = {t: evt for t, evt in self.events.iteritems() if evt.dst == ip}
 		inst.adjust_time()

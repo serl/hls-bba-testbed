@@ -15,5 +15,5 @@ if __name__ == "__main__":
 		print "Reading {0}...".format(filename)
 		session = VLCSession.parse(filename)
 		print "Plotting {0}...".format(filename)
-		plotSession(session, os.path.join('tests', session.collection, session.name + '.png') if export else False)
+		plotSession(session, [os.path.join('tests', session.collection, session.name + '.' + ext) for ext in ('pickle', 'png')] if export else False)
 
