@@ -247,17 +247,3 @@ def plotIperf(session, export = False, plot_start=0, plot_end=None):
 
 	plt.close()
 
-if __name__ == "__main__":
-	import sys
-	from log import Session
-	filenames = sys.argv[1:]
-	export = len(filenames) > 1
-	if filenames[0] == 'export':
-		export = True
-		filenames = filenames[1:]
-
-	for filename in filenames:
-		session = Session()
-		session.addlog(filename)
-		plotSession(session, filename+'.svg' if export else None)
-

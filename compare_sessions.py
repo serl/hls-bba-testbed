@@ -28,10 +28,5 @@ if __name__ == "__main__":
 			sessions_by_algo.append(obj)
 		obj['sessions'].append(s)
 
-	#for t in sessions_by_algo:
-	#	print t[0]
-	#	for s in t[1]:
-	#		print s.bwprofile
-	#	print
 	plotCompareSessions(sessions_by_algo, export)
 
