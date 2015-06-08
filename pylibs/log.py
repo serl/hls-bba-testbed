@@ -82,6 +82,15 @@ class VLCLog(Log):
 		events = [evt for t, evt in self.events.iteritems() if evt.playing_time >= skip*1000]
 		return float(sum([evt.buffer for evt in events]))/len(events)
 
+	def count_bitrate_changes(self, skip=0):
+		count = 0
+		last = self.composition[skip]
+		for b in self.composition[skip:]:
+			if b != last:
+				count += 1
+				last = b
+		return count
+
 	@classmethod
 	def parse(cls, filename):
 		inst = cls()

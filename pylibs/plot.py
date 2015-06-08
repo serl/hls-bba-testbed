@@ -68,11 +68,14 @@ def plotSession(session, export = False, plot_start=0, plot_end=None):
 	#buffer
 	ax_packets.plot(bandwidth_buffer_t, bandwidth_buffer_packets, color='blue', label='bw buffer')
 	#ax_packets.plot(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
-	ax_packets.axis([plot_start, plot_end, 0, None])
 
 	#tcpprobe
 	cwnd = [evt.snd_cwnd for evt in tcpprobe_events]
 	ax_packets.plot(tcpprobe_t, cwnd, color='red', label='cwnd')
+	ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpprobe_events]
+	ax_packets.plot(tcpprobe_t, ssthresh, color='gray', label='ssthresh')
+
+	ax_packets.axis([plot_start, plot_end, 0, None])
 
 	#ax_msec = ax_packets.twinx()
 	#rtt = [evt.srtt for evt in tcpprobe_events]
@@ -102,6 +105,7 @@ def format_bw(bits):
 def plotCompareSessions(grouped_sessions, export = False):
 	fig = plt.figure()
 	colors = ('blue', 'red')
+	exclude_segments = 40
 	
 	plots = [ 
 			{
@@ -110,9 +114,19 @@ def plotCompareSessions(grouped_sessions, export = False):
 				'show_bitrates': True
 			},
 			{
-				'title': 'Average bitrate (excl. first 25 segments)',
-				'fn': lambda s: s.VLClogs[0].get_avg_bitrate(skip=25),
+				'title': 'Average bitrate (excl. first {0} segments)'.format(exclude_segments),
+				'fn': lambda s: s.VLClogs[0].get_avg_bitrate(skip=exclude_segments),
 				'show_bitrates': True
+			},
+			{
+				'title': 'Bitrate changes',
+				'fn': lambda s: s.VLClogs[0].count_bitrate_changes(),
+				'show_bitrates': False
+			},
+			{
+				'title': 'Bitrate changes (excl. first {0} segments)'.format(exclude_segments),
+				'fn': lambda s: s.VLClogs[0].count_bitrate_changes(skip=exclude_segments),
+				'show_bitrates': False
 			},
 #			{
 #				'title': 'Average buffer size',
@@ -123,7 +137,7 @@ def plotCompareSessions(grouped_sessions, export = False):
 #				'title': 'Average buffer size (excl. first 240 seconts)',
 #				'fn': lambda s: s.logs[0].get_avg_buffer(skip=240),
 #				'show_bitrates': False
-#			}
+#			},
 		]
 
 	ind = np.arange(len(grouped_sessions[0]['sessions']))
