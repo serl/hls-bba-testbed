@@ -1,15 +1,26 @@
+import log
 import matplotlib.pyplot as plt
 import numpy as np
-import log
+import cPickle as pickle
+from zipfile import PyZipFile
+from tempfile import NamedTemporaryFile
 
-def show(fig, export):
+def show(session, fig, export):
 	if export:
 		if isinstance(export, basestring):
 			export = [export]
 		for filename in export:
 			if filename.endswith('.pickle'):
 				with open(filename, 'w') as f:
-					pickle.dump(fig, f)
+					pickle.dump(session, f)
+			elif filename.endswith('.pyz'):
+				with PyZipFile(filename, mode='w') as zf:
+					zf.writepy('pylibs')
+					with NamedTemporaryFile() as f:
+						pickle.dump(session, f.file)
+						f.seek(0, 0)
+						zf.write(f.name, 'pylibs/pickle')
+					zf.writestr('__main__.py', "from pylibs.plot import plotSession\nimport cPickle as pickle\nfrom pkg_resources import resource_stream\nplotSession(pickle.load(resource_stream('pylibs', 'pickle')))")
 			else:
 				fig.set_size_inches(22,12)
 				fig.savefig(filename, bbox_inches='tight')
@@ -104,7 +115,7 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	handles, labels = ax_packets.get_legend_handles_labels()
 	ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
-	show(fig, export)
+	show(session, fig, export)
 
 	plt.close()
 
@@ -266,7 +277,7 @@ def plotIperfSession(session, export = False, plot_start=0, plot_end=None):
 	if bw_text is not '':
 		ax_msec.text(plot_end, max(rtt)*1.2, bw_text, ha='right')
 
-	show(fig, export)
+	show(session, fig, export)
 
 	plt.close()
 
@@ -277,6 +288,16 @@ def plotSession(session, export = False, plot_start=0, plot_end=None):
 	elif type(session) is log.VLCSession:
 		plot_fn = plotVLCSession
 	if plot_fn is None:
+		print type(session), session, dir(session)
 		raise Exception('Not implemented')
 	return plot_fn(session, export, plot_start, plot_end)
+
+def open_pickle(filename):
+	with open(filename, 'r') as f:
+		plotSession(pickle.load(f))
+
+if __name__ == '__main__':
+	import sys
+	sys.modules['pylibs.log'] = log #bad hack
+	open_pickle(sys.argv[1])
 
