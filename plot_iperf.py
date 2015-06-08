@@ -1,6 +1,6 @@
 import sys, re
 from pylibs.log import IperfSession
-from pylibs.plot import plotIperf
+from pylibs.plot import plotSession
 
 if __name__ == "__main__":
 	filenames = sys.argv[1:]
@@ -16,5 +16,5 @@ if __name__ == "__main__":
 		print "Reading {0}...".format(dirname)
 		session = IperfSession.parse(dirname, tshark=False)
 		print "Plotting {0}...".format(dirname)
-		plotIperf(session, dirname+'.png' if export else False)#, 15, 30)
+		plotSession(session, dirname+'.png' if export else False)#, 15, 30)
 

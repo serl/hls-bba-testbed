@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
+import log
 
 def show(fig, export):
 	if export:
@@ -16,7 +16,7 @@ def show(fig, export):
 	else:
 		plt.show()
 
-def plotSession(session, export = False, plot_start=0, plot_end=None):
+def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	log = session.VLClogs[0]
 	if plot_end is None:
 		plot_end = log.duration
@@ -189,7 +189,7 @@ def plotCompareSessions(grouped_sessions, export = False):
 
 	plt.close()
 
-def plotIperf(session, export = False, plot_start=0, plot_end=None):
+def plotIperfSession(session, export = False, plot_start=0, plot_end=None):
 	if plot_end is None:
 		plot_end = session.duration
 	tcpprobe_t, tcpprobe_events = session.tcpprobe.get_events(time_relative_to=session)
@@ -269,4 +269,14 @@ def plotIperf(session, export = False, plot_start=0, plot_end=None):
 	show(fig, export)
 
 	plt.close()
+
+def plotSession(session, export = False, plot_start=0, plot_end=None):
+	plot_fn = None
+	if type(session) is log.IperfSession:
+		plot_fn = plotIperfSession
+	elif type(session) is log.VLCSession:
+		plot_fn = plotVLCSession
+	if plot_fn is None:
+		raise Exception('Not implemented')
+	return plot_fn(session, export, plot_start, plot_end)
 
