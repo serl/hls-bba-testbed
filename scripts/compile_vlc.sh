@@ -2,8 +2,6 @@
 
 apt-get -y build-dep vlc #we want the libraries, don't we?
 
-ln -fs /vagrant/code/vlc/vlc /home/vagrant/vlc
-
 cd /vagrant/code
 
 if [ -e vlc/vlc ]; then
