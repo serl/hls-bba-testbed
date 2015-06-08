@@ -7,11 +7,11 @@ bigbuckbunny_url = server_url + '/bbb/bigbuckbunny.m3u8'
 
 if __name__ == "__main__":
 	algorithms = ('classic', 'bba0')
-	bandwidths = ('300kbit', '650kbit', '950kbit', '1mbit', '2mbit', '100mbit')
+	bandwidths = ('300kbit', '650kbit', '950kbit', '1mbit', '2mbit', '5mbit', '100mbit')
 	delay = '200ms'
 	buffer_size = 200
 	
-	collection = 'constant_single_{0}_{1}p'.format(delay, buffer_size)
+	collection = 'constant_single_bipbop_{0}_{1}p'.format(delay, buffer_size)
 	for algo in algorithms:
 		player = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
 		num = 1
