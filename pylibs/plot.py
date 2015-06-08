@@ -69,13 +69,13 @@ def plotSession(session, export = False, plot_start=0, plot_end=None):
 	ax_packets.plot(bandwidth_buffer_t, bandwidth_buffer_packets, color='blue', label='bw buffer')
 	#ax_packets.plot(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
 
-	#tcpprobe
-	cwnd = [evt.snd_cwnd for evt in tcpprobe_events]
-	ax_packets.plot(tcpprobe_t, cwnd, color='red', label='cwnd')
-	ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpprobe_events]
-	ax_packets.plot(tcpprobe_t, ssthresh, color='gray', label='ssthresh')
-
-	ax_packets.axis([plot_start, plot_end, 0, None])
+	for fourtuple, tcpp in session.tcpprobe.split().iteritems():
+		tcpp_t, tcpp_events = tcpp.get_events(time_relative_to=session)
+		#tcpprobe
+		cwnd = [evt.snd_cwnd for evt in tcpp_events]
+		ax_packets.plot(tcpp_t, cwnd, color='red', label='cwnd')
+		ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
+		ax_packets.plot(tcpp_t, ssthresh, color='gray', label='ssthresh')
 
 	#ax_msec = ax_packets.twinx()
 	#rtt = [evt.srtt for evt in tcpprobe_events]
@@ -85,7 +85,9 @@ def plotSession(session, export = False, plot_start=0, plot_end=None):
 	#	tl.set_color('green')
 	#ax_msec.axis([plot_start, plot_end, min(rtt)*0.8, max(rtt)*1.2])
 
-	ax_packets.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
+	ax_packets.axis([plot_start, plot_end, 0, None])
+	handles, labels = ax_packets.get_legend_handles_labels()
+	ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
 	if export:
 		fig.set_size_inches(22,12)

@@ -205,11 +205,26 @@ class VLCSession(Session):
 		return log
 
 class TcpProbeLog(Log):
+	def split(self):
+		instances = {}
+		for t, evt in self.events.iteritems():
+			if (evt.src, evt.src_port, evt.dst, evt.dst_port) not in instances:
+				instances[(evt.src, evt.src_port, evt.dst, evt.dst_port)] = self.__class__()
+			instances[(evt.src, evt.src_port, evt.dst, evt.dst_port)].events[t] = evt
+		return instances
+
+	def get_by_ip(self, ip):
+		inst = self.__class__()
+		inst.events = {t: evt for t, evt in self.events.iteritems() if evt.dst == ip}
+		inst.adjust_time()
+		return inst
+
 	@classmethod
 	def parse(cls, filename):
 		inst = cls()
 		boot_re = re.compile('^([\d\.]+) BOOT CONFIG_HZ=(\d+)$')
 		line_re = re.compile('^([\d\.]+) ([\d\.:a-f\[\]]+):(\d+) ([\d\.:a-f\[\]]+):(\d+) (\d+) (0x[\da-f]+) (0x[\da-f]+) (\d+) (\d+) (\d+) (\d+) (\d+)$')
+		ip4_re = re.compile('^\[::ffff:([\.\d]+)\]$')
 		start_time = None
 		hz_value = 1
 		with open(filename, "r") as contents:
@@ -224,9 +239,11 @@ class TcpProbeLog(Log):
 				if match:
 					evt = LogEvent()
 					evt.t = float(match.group(1)) + start_time
-					evt.src = match.group(2)
+					match_ip4 = ip4_re.match(match.group(2))
+					evt.src = match_ip4.group(1) if match_ip4 else match.group(2)
 					evt.src_port = int(match.group(3))
-					evt.dst = match.group(4)
+					match_ip4 = ip4_re.match(match.group(4))
+					evt.dst = match_ip4.group(1) if match_ip4 else match.group(4)
 					evt.dst_port = int(match.group(5))
 					evt.packet_len = int(match.group(6))
 					evt.next_seq = match.group(7)
