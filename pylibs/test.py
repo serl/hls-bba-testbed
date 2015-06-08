@@ -50,23 +50,23 @@ class Test(object):
 			with open(os.path.join(self.save_dir, self.collection, self.name, 'jobs.sched'), 'w') as f:
 				f.write(scheduler_commands)
 
-bw_re = re.compile('^(\d+)(\w*)$')
+bw_re = re.compile('^(\d+(\.\d+)?)(\w*)$')
 def bw_convert(bw): #read tc style, convert to bits/s (hope so)
 	match = bw_re.match(bw)
 	if not match:
 		raise Exception('Malformed bandwidth, see tc docs.')
-	value = int(match.group(1))
-	unit = match.group(2).lower()
+	value = float(match.group(1))
+	unit = match.group(3).lower()
 	if unit == 'kbps':
-		return value*8000
+		return int(value*8000)
 	if unit == 'mbps':
-		return value*8000000
+		return int(value*8000000)
 	if unit == 'kbit':
-		return value*1000
+		return int(value*1000)
 	if unit == 'mbit':
-		return value*1000000
+		return int(value*1000000)
 	if unit == 'bps' or unit == '':
-		return value*8
+		return int(value*8)
 	raise Exception('Malformed bandwidth, see tc docs.')
 
 def mkdir_p(path):

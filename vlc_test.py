@@ -7,7 +7,7 @@ bigbuckbunny_url = server_url + '/bbb/bigbuckbunny.m3u8'
 
 if __name__ == "__main__":
 	algorithms = ('classic', 'bba0')
-	bandwidths = ('300kbit', '650kbit', '950kbit', '1mbit', '2mbit', '5mbit', '100mbit')
+	bandwidths = ('300kbit', '650kbit', '950kbit', '1mbit', '1.5mbit', '2mbit', '5mbit', '10mbit')
 	delay = '200ms'
 	buffer_size = 200
 	
