@@ -28,7 +28,7 @@ def plotSession(session, export = False, plot_start=0, plot_end=None):
 	fig = plt.figure()
 
 	ax_bits = fig.add_subplot(2, 1, 1)
-	ax_bits.set_ylabel('(bits/s)')
+	ax_bits.set_ylabel('(bit/s)')
 	bits_limit = 0
 
 	for stream in session.streams:
@@ -51,7 +51,7 @@ def plotSession(session, export = False, plot_start=0, plot_end=None):
 		ax_bits.plot(bw_t, bw_values, marker='.', markersize=3, linestyle=':', color='purple', linewidth=2, label='bw limit')
 
 		if bits_limit < max(bw_values):
-			bits_limit = max(bw_values) 
+			bits_limit = max(bw_values)
 
 	for buffering in [e for e in vlc_events if e.buffering][1:]:
 		ax_bits.axvline(buffering.t/1000, alpha=0.8, linewidth=3, color='red')
@@ -60,7 +60,7 @@ def plotSession(session, export = False, plot_start=0, plot_end=None):
 	ax_bits.plot(vlc_t, obtained_bandwidth, marker='.', markersize=3, linestyle=':', color='black', label='obtained bw')
 
 	if bits_limit < max(obtained_bandwidth):
-		bits_limit = max(obtained_bandwidth) 
+		bits_limit = max(obtained_bandwidth)
 
 	stream_requests = [log.streams[evt.downloading_stream] if evt.downloading_stream is not None else None for evt in vlc_events]
 	ax_bits.plot(vlc_t, stream_requests, marker='.', markersize=3, linestyle=':', color='green', label='stream requested')
@@ -120,7 +120,7 @@ def plotCompareSessions(grouped_sessions, export = False):
 	colors = ('blue', 'red')
 	exclude_segments = 40
 	
-	plots = [ 
+	plots = [
 			{
 				'title': 'Average bitrate',
 				'fn': lambda s: s.VLClogs[0].get_avg_bitrate(),
