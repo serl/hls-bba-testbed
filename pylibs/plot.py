@@ -50,7 +50,7 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	if len(session.bwprofile):
 		bw_t = []
 		bw_values = []
-		for time, value in sorted(session.bwprofile.iteritems()):
+		for time, value in sorted(session.bwprofile.iteritems()): #what about using .step instead of this mess?
 			time = time/1000
 			if len(bw_t) != 0:
 				bw_t.append(time - 1)
@@ -68,19 +68,19 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 		ax_bits.axvline(buffering.t/1000, alpha=0.8, linewidth=3, color='red')
 
 	obtained_bandwidth = [evt.downloading_bandwidth for evt in vlc_events]
-	ax_bits.plot(vlc_t, obtained_bandwidth, marker='.', markersize=3, linestyle=':', color='black', label='obtained bw')
+	ax_bits.step(vlc_t, obtained_bandwidth, marker='.', markersize=3, linestyle=':', color='black', label='obtained bw')
 
 	if bits_limit < max(obtained_bandwidth):
 		bits_limit = max(obtained_bandwidth)
 
 	stream_requests = [log.streams[evt.downloading_stream] if evt.downloading_stream is not None else None for evt in vlc_events]
-	ax_bits.plot(vlc_t, stream_requests, marker='.', markersize=3, linestyle=':', color='green', label='stream requested')
+	ax_bits.step(vlc_t, stream_requests, marker='.', markersize=3, linestyle=':', color='green', label='stream requested')
 
 	ax_bits.axis([plot_start, plot_end, 0, bits_limit])
 
 	ax_buffer = ax_bits.twinx()
 	buffer_size = [evt.buffer for evt in vlc_events]
-	ax_buffer.plot(vlc_t, buffer_size, color='blue', alpha=0.7)
+	ax_buffer.step(vlc_t, buffer_size, color='blue', alpha=0.7)
 	ax_buffer.set_ylabel('buffer (s)', color='blue')
 	for tl in ax_buffer.get_yticklabels():
 		tl.set_color('blue')
@@ -92,20 +92,20 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	ax_packets.set_ylabel('packets')
 
 	#buffer
-	ax_packets.plot(bandwidth_buffer_t, bandwidth_buffer_packets, color='blue', label='bw buffer')
-	#ax_packets.plot(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
+	ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, color='blue', label='bw buffer')
+	#ax_packets.step(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
 
 	for fourtuple, tcpp in log.tcpprobe.split().iteritems():
 		tcpp_t, tcpp_events = tcpp.get_events(time_relative_to=session)
 		#tcpprobe
 		cwnd = [evt.snd_cwnd for evt in tcpp_events]
-		ax_packets.plot(tcpp_t, cwnd, color='red', label='cwnd')
+		ax_packets.step(tcpp_t, cwnd, color='red', label='cwnd')
 		ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
-		ax_packets.plot(tcpp_t, ssthresh, color='gray', label='ssthresh')
+		ax_packets.step(tcpp_t, ssthresh, color='gray', label='ssthresh')
 
 	#ax_msec = ax_packets.twinx()
 	#rtt = [evt.srtt for evt in tcpprobe_events]
-	#ax_msec.plot(tcpprobe_t, rtt, color='green', alpha=0.7)
+	#ax_msec.step(tcpprobe_t, rtt, color='green', alpha=0.7)
 	#ax_msec.set_ylabel('RTT (ms)', color='green')
 	#for tl in ax_msec.get_yticklabels():
 	#	tl.set_color('green')
@@ -226,20 +226,20 @@ def plotIperfSession(session, export = False, plot_start=0, plot_end=None):
 
 	#tcpprobe
 	cwnd = [evt.snd_cwnd for evt in tcpprobe_events]
-	ax_packets.plot(tcpprobe_t, cwnd, color='red', label='cwnd')
+	ax_packets.step(tcpprobe_t, cwnd, color='red', label='cwnd')
 	ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpprobe_events]
-	ax_packets.plot(tcpprobe_t, ssthresh, color='gray', label='ssthresh')
+	ax_packets.step(tcpprobe_t, ssthresh, color='gray', label='ssthresh')
 
 	#buffer
-	ax_packets.plot(bandwidth_buffer_t, bandwidth_buffer_packets, color='blue', label='bw buffer')
-	ax_packets.plot(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
+	ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, color='blue', label='bw buffer')
+	ax_packets.step(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
 
 	ax_packets.axis([plot_start, plot_end, 0, None])
 
 	#RTT
 	ax_msec = ax_packets.twinx()
 	rtt = [evt.srtt for evt in tcpprobe_events]
-	ax_msec.plot(tcpprobe_t, rtt, color='green', alpha=0.7)
+	ax_msec.step(tcpprobe_t, rtt, color='green', alpha=0.7)
 	ax_msec.set_ylabel('RTT (ms)', color='green')
 	for tl in ax_msec.get_yticklabels():
 		tl.set_color('green')
@@ -253,8 +253,7 @@ def plotIperfSession(session, export = False, plot_start=0, plot_end=None):
 		if tshark:
 			#packet size
 			ax_bytes = fig.add_subplot(3, 1, plot_id, sharex=ax_packets)
-			#ax_bytes.plot(tshark_framelen_t[h], tshark_framelen[h], color='blue', alpha=0.7)
-			ax_bytes.plot(tshark_framelen_t[h], tshark_framelen[h], marker='.', markersize=2, linestyle=':', color='blue', alpha=0.7)
+			ax_bytes.step(tshark_framelen_t[h], tshark_framelen[h], marker='.', markersize=2, linestyle=':', color='blue', alpha=0.7)
 			ax_bytes.set_ylabel('packet size (B)', color='blue')
 			for tl in ax_bytes.get_yticklabels():
 				tl.set_color('blue')
@@ -262,8 +261,7 @@ def plotIperfSession(session, export = False, plot_start=0, plot_end=None):
 
 			#RTT
 			ax_msec = ax_bytes.twinx()
-			#ax_msec.plot(tshark_rtt_t[h], tshark_rtt[h], color='green', alpha=0.7)
-			ax_msec.plot(tshark_rtt_t[h], tshark_rtt[h], marker='.', markersize=2, linestyle=':', color='green', alpha=0.7)
+			ax_msec.step(tshark_rtt_t[h], tshark_rtt[h], marker='.', markersize=2, linestyle=':', color='green', alpha=0.7)
 			ax_msec.set_ylabel('RTT (ms)', color='green')
 			for tl in ax_msec.get_yticklabels():
 				tl.set_color('green')
