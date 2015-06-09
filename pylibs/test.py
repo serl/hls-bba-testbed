@@ -3,7 +3,7 @@ import os, re, json, errno, string, random
 class Test(object):
 	save_dir = 'tests'
 
-	def __init__(self, name, collection='', player=None, init_bw=None, log_cwnd=True, log_routerbuffer=True):
+	def __init__(self, name, collection='', player=None, init_bw=None, packet_delay=None, log_cwnd=True, log_routerbuffer=True):
 		self._events = []
 		self.name = name
 		self.collection = collection
@@ -15,8 +15,9 @@ class Test(object):
 		if player is not None:
 			self._events.append(player)
 		if init_bw is not None:
-			init_bw.delay = 0
 			self._events.append(init_bw)
+		if packet_delay is not None:
+			self._events.append(DelayChange(packet_delay=packet_delay))
 
 		if self.log_cwnd:
 			self._events.append(CwndLogger(delay=0, host='server'))
