@@ -1,8 +1,14 @@
 #!/bin/bash
 
 schedule="$(cat /dev/stdin)"
+lockdir="/tmp/testrunning"
 
 source $(dirname $0)/colors.sh
+
+if ! mkdir "$lockdir" &>/dev/null; then
+	echo -e "${Red}Another test is running... Abort!$Color_Off"
+	exit 1
+fi
 
 hosts=$(echo "$schedule" | grep --extended-regexp --only-matching "^[^#\\ ]+" | sort | uniq)
 hosts_count=$(echo $hosts | wc -w)
@@ -23,4 +29,7 @@ for host in $hosts; do
 	echo -e "${Green}Sending schedule to $host...$Color_Off"
 	echo "$schedule" | ssh -oStrictHostKeyChecking=no $host "/vagrant/code/scheduler.sh $start_time" &
 done
+
+sleep $(($duration + $master_delay + 2))
+rmdir "$lockdir" &>/dev/null || echo "${Red}Unclean exit!$Color_Off"
 
