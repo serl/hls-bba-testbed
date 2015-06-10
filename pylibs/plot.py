@@ -45,24 +45,18 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	for stream in session.streams:
 		ax_bits.plot([plot_start, plot_end], [stream]*2, alpha=0.4, color='black', linestyle='--')
 		if bits_limit < stream:
-			bits_limit = stream + 100000
+			bits_limit = stream*1.1
 
 	if len(session.bwprofile):
-		bw_t = []
-		bw_values = []
-		for time, value in sorted(session.bwprofile.iteritems()): #what about using .step instead of this mess?
-			time = time/1000
-			if len(bw_t) != 0:
-				bw_t.append(time - 1)
-				bw_values.append(bw_values[-1])
-			bw_t.append(time)
-			bw_values.append(value)
-		bw_t.append(plot_end)
-		bw_values.append(bw_values[-1])
-		ax_bits.plot(bw_t, bw_values, marker='.', markersize=3, linestyle=':', color='purple', linewidth=2, label='bw limit')
-
-		if bits_limit < max(bw_values):
-			bits_limit = max(bw_values)
+		bwprofile = sorted(session.bwprofile.iteritems())
+		bwprofile.append((plot_end, bwprofile[-1][1]))
+		bwprofile_t = [t for t, v in bwprofile]
+		bwprofile_v = [v for t, v in bwprofile]
+		bwprofile_v = [bwprofile_v[0]] + bwprofile_v[:-1]
+		ax_bits.step(bwprofile_t, bwprofile_v, marker='.', markersize=3, linestyle=':', color='purple', linewidth=2, label='bw limit')
+		max_bw = max(bwprofile_v)
+		if bits_limit < max_bw:
+			bits_limit = max_bw*1.1
 
 	for buffering in [e for e in vlc_events if e.buffering][1:]:
 		ax_bits.axvline(buffering.t/1000, alpha=0.8, linewidth=3, color='red')
@@ -71,7 +65,7 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	ax_bits.step(vlc_t, obtained_bandwidth, marker='.', markersize=3, linestyle=':', color='black', label='obtained bw')
 
 	if bits_limit < max(obtained_bandwidth):
-		bits_limit = max(obtained_bandwidth)
+		bits_limit = max(obtained_bandwidth)*1.1
 
 	stream_requests = [log.streams[evt.downloading_stream] if evt.downloading_stream is not None else None for evt in vlc_events]
 	ax_bits.step(vlc_t, stream_requests, marker='.', markersize=3, linestyle=':', color='green', label='stream requested')
@@ -84,7 +78,7 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	ax_buffer.set_ylabel('buffer (s)', color='blue')
 	for tl in ax_buffer.get_yticklabels():
 		tl.set_color('blue')
-	ax_buffer.axis([plot_start, plot_end, 0, max(buffer_size)+5])
+	ax_buffer.axis([plot_start, plot_end, 0, None])
 
 	ax_bits.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
