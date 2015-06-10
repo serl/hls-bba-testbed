@@ -43,7 +43,7 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	bits_limit = 0
 
 	for stream in session.streams:
-		ax_bits.plot([plot_start, plot_end], [stream]*2, alpha=0.4, color='black', linestyle='--')
+		ax_bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
 		if bits_limit < stream:
 			bits_limit = stream*1.1
 
@@ -78,6 +78,7 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	ax_buffer.set_ylabel('buffer (s)', color='blue')
 	for tl in ax_buffer.get_yticklabels():
 		tl.set_color('blue')
+	ax_buffer.axhline(log.buffersize, color='blue', linestyle='--')
 	ax_buffer.axis([plot_start, plot_end, 0, None])
 
 	ax_bits.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)

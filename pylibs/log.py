@@ -56,6 +56,7 @@ class VLCLog(Log):
 		self._composition_streams_id = ()
 		self.composition = ()
 		self.tcpprobe = None
+		self.buffersize = 240
 
 	def _fill_composition(self):
 		self.composition = tuple(self.streams[n] for n in self._composition_streams_id)
