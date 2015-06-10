@@ -34,5 +34,5 @@ for host in $hosts; do
 done
 
 sleep $(($duration + $master_delay + 2))
-rmdir "$lockdir" &>/dev/null || echo "${Red}Unclean exit!$Color_Off"
+rmdir "$lockdir" &>/dev/null || echo -e "${Red}Unclean exit!$Color_Off"
 
