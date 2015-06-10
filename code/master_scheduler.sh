@@ -15,9 +15,12 @@ hosts_count=$(echo $hosts | wc -w)
 master_delay=$(($hosts_count * 2 + 2))
 duration=$(echo "$schedule" | grep --invert-match '^#' | cut -f2 -d' ' | sort --numeric-sort | tail -n1)
 
+echo -e "${IBlack}Clearing SSH keys...$Color_Off"
+rm /home/vagrant/.ssh/known_hosts &>/dev/null
+
 for host in $hosts; do
 	echo -ne "${IBlack}Updating $host clock..."
-	ssh -oStrictHostKeyChecking=no $host "sudo ntpdate pool.ntp.org"
+	ssh -oLogLevel=quiet -oStrictHostKeyChecking=no $host "sudo ntpdate pool.ntp.org"
 	echo -ne $Color_Off
 done
 
