@@ -44,3 +44,30 @@ if __name__ == "__main__":
 			t.add_event(BwChange(delay=d, bw=bw, buffer_size=buffer_size))
 		t.generate_schedule()
 
+	bandwidths = ('650kbit', '950kbit', '1mbit', '1.5mbit', '2mbit', '5mbit', '10mbit')
+	collection = 'constant_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
+	for algo in algorithms:
+		player1 = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
+		player2 = Player(delay=1, host='client1', algo=algo, url=bipbop_url, kill_after=2330)
+		num = 1
+		for bw in bandwidths:
+			bwchange = BwChange(bw=bw, buffer_size=buffer_size)
+			t = Test(name='c{0:02d}_two_con_bipbop_{1}_{2}'.format(num, bw, algo), collection=collection, init_bw=bwchange, packet_delay=delay)
+			t.add_event(player1)
+			t.add_event(player2)
+			t.generate_schedule()
+			num += 1
+
+	collection = 'constant_two_del_bipbop_{0}_{1}p'.format(delay, buffer_size)
+	for algo in algorithms:
+		player1 = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
+		player2 = Player(delay=300, host='client1', algo=algo, url=bipbop_url, kill_after=2330)
+		num = 1
+		for bw in bandwidths:
+			bwchange = BwChange(bw=bw, buffer_size=buffer_size)
+			t = Test(name='c{0:02d}_two_del_bipbop_{1}_{2}'.format(num, bw, algo), collection=collection, init_bw=bwchange, packet_delay=delay)
+			t.add_event(player1)
+			t.add_event(player2)
+			t.generate_schedule()
+			num += 1
+

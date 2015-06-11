@@ -12,7 +12,7 @@ routers = {
   "delay" => ['192.168.150.55', '192.168.200.5']
 }
 
-clients = 1
+clients = 2
 clients_memory = 1024
 clients_cpus = 2
 clients_ip = '192.168.200'

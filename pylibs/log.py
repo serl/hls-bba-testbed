@@ -100,6 +100,7 @@ class VLCLog(Log):
 		streams_re = re.compile('^STREAMS: ([\d\s]*)$')
 		composition_re = re.compile('^DOWNLOAD COMPOSITION: (\d*)$')
 		event_re = re.compile('^T: ([\d\.]+), PLAYING TIME: (-?\d+)ms, BUFFER: (-?\d+)s \((-?\d+)\), PLAY STR/SEG \(buffering\): (\d+)/(\d+) \((\d+)\), DOWNLOAD STR/SEG \(active\): (\d+)/(\d+) \((\d+)\), BANDWIDTH: (\d+)$')
+		past_evt = None
 		with open(filename, "r") as contents:
 			for line in contents:
 				#event line
@@ -118,9 +119,15 @@ class VLCLog(Log):
 					evt.downloading_segment = int(match.group(9)) if evt.downloading_active else None
 					evt.previous_bandwidth = int(match.group(11))
 
+					evt.buffer_approx = None
+					if (not evt.downloading_active and not past_evt.downloading_active) or (past_evt is not None and past_evt.buffer < evt.buffer):
+						evt.buffer_approx = evt.buffer
+					last_buffer_size = evt.buffer
+
 					#print line.strip()
 					#print evt.t, evt.playing_time, evt.buffer, evt.buffer_segments, evt.playing_stream, evt.playing_segment, evt.rebuffering, evt.downloading_stream, evt.downloading_segment, evt.downloading_active, evt.previous_bandwidth
 					inst.events[evt.t] = evt
+					past_evt = evt
 					continue
 
 				#download composition line
@@ -160,6 +167,7 @@ class VLCSession(Session):
 		self.delay_buffer = None
 		self.name = ''
 		self.collection = ''
+		self.max_display_bits = 0
 
 	@classmethod
 	def parse(cls, dirname):
@@ -184,6 +192,7 @@ class VLCSession(Session):
 					inst.name = session['name']
 					inst.collection = session['collection']
 					inst.bwprofile = {int(k): v for k,v in session['bwprofile'].iteritems()}
+					inst.max_display_bits = max(inst.bwprofile.values())
 					inst.clients = session['clients']
 					for client in inst.clients:
 						log_filename = os.path.join(dirname, client['host'] + '_vlc.log')
@@ -199,10 +208,20 @@ class VLCSession(Session):
 
 	def _addvlclog(self, filename):
 		log = VLCLog.parse(filename)
+
 		if len(self.streams) == 0:
 			self.streams = log.streams
 		elif self.streams != log.streams:
 			raise Exception("Logs of different videos!")
+
+		max_stream = max(log.streams)
+		if max_stream > self.max_display_bits:
+			self.max_display_bits = max_stream
+
+		max_bw = max([evt.downloading_bandwidth for t, evt in log.events.iteritems()])
+		if max_bw > self.max_display_bits:
+			self.max_display_bits = max_bw
+
 		self.VLClogs.append(log)
 		self.add_log(log)
 		return log
