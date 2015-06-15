@@ -31,7 +31,7 @@ class Test(object):
 	def generate_schedule(self, echo=False):
 		last_moment = 2
 		for evt in self._events:
-			if KilledEvent in type(evt).__bases__ and 'kill_after' in evt.__dict__ and evt.kill_after > last_moment:
+			if KilledEvent in type(evt).__bases__ and 'kill_after' in evt.__dict__ and evt.kill_after + evt.delay > last_moment:
 				last_moment = evt.kill_after + evt.delay
 		for evt in self._events:
 			if KilledEvent in type(evt).__bases__ and not 'kill_after' in evt.__dict__:
