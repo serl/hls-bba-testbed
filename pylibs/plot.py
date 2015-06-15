@@ -74,8 +74,14 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 		ax_bits.axis([plot_start, plot_end, 0, session.max_display_bits*1.1])
 		ax_buffer.axis([plot_start, plot_end, 0, None])
 
-		if i == 1:
-			ax_bits.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
+		#avg bitrate
+		ax_buffer.text(plot_end*.99, 5, 'avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000), weight='semibold', ha='right')
+
+		if i == 0:
+			handles, labels = ax_bits.get_legend_handles_labels()
+			handles += [plt.Line2D((0,1),(0,0), color='red'), plt.Line2D((0,1),(0,0), color='gray')]
+			labels += ['cwnd', 'ssthresh']
+			ax_bits.legend(handles, labels, bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=5, mode="expand", borderaxespad=0.)
 
 		i += 2
 
@@ -97,10 +103,10 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	ax_packets.set_ylabel('router buffer (packets)')
 
 	#buffer
-	ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, color='blue', label='bw buffer')
+	ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, color='black', label='bw buffer')
 	#ax_packets.step(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
 
-	ax_packets.axis([plot_start, plot_end, 0, None])
+	ax_packets.axis([plot_start, plot_end, 0, max(bandwidth_buffer_packets)*1.1])
 	handles, labels = ax_packets.get_legend_handles_labels()
 	#ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 

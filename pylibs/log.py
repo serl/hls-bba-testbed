@@ -84,6 +84,10 @@ class VLCLog(Log):
 		events = [evt for t, evt in self.events.iteritems() if evt.playing_time >= skip*1000]
 		return float(sum([evt.buffer for evt in events]))/len(events)
 
+	def get_avg_bandwidth(self, skip=0):
+		samples = [evt.downloading_bandwidth for evt in self.events.values()[skip:] if evt.downloading_bandwidth is not None]
+		return float(sum(samples))/len(samples)
+
 	def count_bitrate_changes(self, skip=0):
 		count = 0
 		last = self.composition[skip]
