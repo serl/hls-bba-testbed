@@ -38,12 +38,18 @@ class Session(object):
 		self.logs.append(log)
 		self.adjust_time()
 	def adjust_time(self):
-		for log in self.logs:
+		for log in filter(self.__class__.logs_filter, self.logs):
 			if self.start_time is None or self.start_time > log.start_time:
 				self.start_time = log.start_time
 			if self.end_time is None or self.end_time < log.end_time:
 				self.end_time = log.end_time
-		self.duration = self.end_time - self.start_time
+		try:
+			self.duration = self.end_time - self.start_time
+		except:
+			pass
+	@staticmethod
+	def logs_filter(log):
+		return True
 	@classmethod
 	def parse(cls, *args, **kwargs):
 		raise Exception('Not implemented')
@@ -229,6 +235,10 @@ class VLCSession(Session):
 		self.VLClogs.append(log)
 		self.add_log(log)
 		return log
+
+	@staticmethod
+	def logs_filter(log):
+		return log.__class__ == VLCLog
 
 class TcpProbeLog(Log):
 	def split(self):
