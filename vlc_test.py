@@ -78,7 +78,7 @@ if __name__ == "__main__":
 		player2 = Player(delay=1, host='client1', algo=algo, url=bipbop_url, kill_after=2330)
 		num = 1
 
-		t = Test(name='v{0:02d}_bipbop_{1}'.format(num, algo), collection=collection, packet_delay=delay)
+		t = Test(name='v{0:02d}_two_con_bipbop_{1}'.format(num, algo), collection=collection, packet_delay=delay)
 		t.add_event(player1)
 		t.add_event(player2)
 		for d, bw in bandwidths.iteritems():
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 		player2 = Player(delay=300, host='client1', algo=algo, url=bipbop_url, kill_after=2330)
 		num = 1
 
-		t = Test(name='v{0:02d}_bipbop_{1}'.format(num, algo), collection=collection, packet_delay=delay)
+		t = Test(name='v{0:02d}_two_del_bipbop_{1}'.format(num, algo), collection=collection, packet_delay=delay)
 		t.add_event(player1)
 		t.add_event(player2)
 		for d, bw in bandwidths.iteritems():
