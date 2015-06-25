@@ -60,41 +60,44 @@ if __name__ == "__main__":
 			t.generate_schedule()
 			num += 1
 
-	bandwidths = {0: '5mbit', 200: '2mbit', 500: '5mbit', 800: '1mbit', 1100: '5mbit'}
+	bandwidths_coll = [
+		{0: '5mbit', 200: '2mbit', 500: '5mbit', 800: '1mbit', 1100: '5mbit'},
+		{0: '5mbit', 250: '4mbit', 500: '3mbit', 750: '2mbit', 1000: '1mbit', 1250: '5mbit'},
+	]
+	num = 1
+	for bandwidths in bandwidths_coll:
+		collection = 'variable_single_bipbop_{0}_{1}p'.format(delay, buffer_size)
+		for algo in algorithms:
+			player = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
 
-	collection = 'variable_single_bipbop_{0}_{1}p'.format(delay, buffer_size)
-	for algo in algorithms:
-		player = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
-		num = 1
+			t = Test(name='v{0:02d}_bipbop_{1}'.format(num, algo), collection=collection, player=player, packet_delay=delay)
+			for d, bw in bandwidths.iteritems():
+				t.add_event(BwChange(delay=d, bw=bw, buffer_size=buffer_size))
+			t.generate_schedule()
 
-		t = Test(name='v{0:02d}_bipbop_{1}'.format(num, algo), collection=collection, player=player, packet_delay=delay)
-		for d, bw in bandwidths.iteritems():
-			t.add_event(BwChange(delay=d, bw=bw, buffer_size=buffer_size))
-		t.generate_schedule()
+		collection = 'variable_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
+		for algo in algorithms:
+			player1 = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
+			player2 = Player(delay=1, host='client1', algo=algo, url=bipbop_url, kill_after=2330)
 
-	collection = 'variable_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
-	for algo in algorithms:
-		player1 = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
-		player2 = Player(delay=1, host='client1', algo=algo, url=bipbop_url, kill_after=2330)
-		num = 1
+			t = Test(name='v{0:02d}_two_con_bipbop_{1}'.format(num, algo), collection=collection, packet_delay=delay)
+			t.add_event(player1)
+			t.add_event(player2)
+			for d, bw in bandwidths.iteritems():
+				t.add_event(BwChange(delay=d, bw=bw, buffer_size=buffer_size))
+			t.generate_schedule()
 
-		t = Test(name='v{0:02d}_two_con_bipbop_{1}'.format(num, algo), collection=collection, packet_delay=delay)
-		t.add_event(player1)
-		t.add_event(player2)
-		for d, bw in bandwidths.iteritems():
-			t.add_event(BwChange(delay=d, bw=bw, buffer_size=buffer_size))
-		t.generate_schedule()
+		collection = 'variable_two_del_bipbop_{0}_{1}p'.format(delay, buffer_size)
+		for algo in algorithms:
+			player1 = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
+			player2 = Player(delay=300, host='client1', algo=algo, url=bipbop_url, kill_after=2330)
 
-	collection = 'variable_two_del_bipbop_{0}_{1}p'.format(delay, buffer_size)
-	for algo in algorithms:
-		player1 = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
-		player2 = Player(delay=300, host='client1', algo=algo, url=bipbop_url, kill_after=2330)
-		num = 1
+			t = Test(name='v{0:02d}_two_del_bipbop_{1}'.format(num, algo), collection=collection, packet_delay=delay)
+			t.add_event(player1)
+			t.add_event(player2)
+			for d, bw in bandwidths.iteritems():
+				t.add_event(BwChange(delay=d, bw=bw, buffer_size=buffer_size))
+			t.generate_schedule()
 
-		t = Test(name='v{0:02d}_two_del_bipbop_{1}'.format(num, algo), collection=collection, packet_delay=delay)
-		t.add_event(player1)
-		t.add_event(player2)
-		for d, bw in bandwidths.iteritems():
-			t.add_event(BwChange(delay=d, bw=bw, buffer_size=buffer_size))
-		t.generate_schedule()
+		num += 1
 
