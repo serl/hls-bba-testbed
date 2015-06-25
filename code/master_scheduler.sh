@@ -5,7 +5,7 @@ logdir="$1"
 lockdir="/tmp/testrunning"
 
 source $(dirname $0)/colors.sh
-ssh="ssh -oLogLevel=quiet -oStrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+ssh="ssh -oLogLevel=quiet -oStrictHostKeyChecking=no"
 
 if ! mkdir "$lockdir" &>/dev/null; then
 	echo -e "${Red}Another test is running... Abort!$Color_Off"
