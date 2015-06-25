@@ -17,6 +17,8 @@ clients_memory = 1024
 clients_cpus = 2
 clients_ip = '192.168.200'
 
+network_prefix = Dir.pwd[1..-1].gsub('/', '-')
+
 Vagrant.configure(2) do |config|
   net_id = 1
   config.vm.box = "ubuntu/trusty32"
@@ -32,7 +34,7 @@ Vagrant.configure(2) do |config|
   server_net_id = net_id
   config.vm.define "server" do |server|
     server.vm.hostname = "server"
-    server.vm.network "private_network", ip: server_ip, virtualbox__intnet: "hls-bba-#{server_net_id}"
+    server.vm.network "private_network", ip: server_ip, virtualbox__intnet: "#{network_prefix}-hls-bba-#{server_net_id}"
     server.vm.provider "virtualbox" do |vb|
       vb.memory = server_memory
       vb.cpus = server_cpus
@@ -65,7 +67,7 @@ Vagrant.configure(2) do |config|
       end
       router.vm.hostname = hostname
       ip_addresses.each_with_index do |ip, ip_idx|
-        router.vm.network "private_network", ip: ip, virtualbox__intnet: "hls-bba-#{router_net_id+ip_idx}"
+        router.vm.network "private_network", ip: ip, virtualbox__intnet: "#{network_prefix}-hls-bba-#{router_net_id+ip_idx}"
       end
       #second interface of next routers and first interface of previous ones
       ips_net_idx = 0
@@ -98,7 +100,7 @@ Vagrant.configure(2) do |config|
         vb.cpus = clients_cpus
       end
       client.vm.hostname = hostname
-      client.vm.network "private_network", ip: ip, virtualbox__intnet: "hls-bba-#{client_net_id}"
+      client.vm.network "private_network", ip: ip, virtualbox__intnet: "#{network_prefix}-hls-bba-#{client_net_id}"
 
       gateway = routers.values.last.last #and that's the last ip of the last router
       routers.each do |hostname, ip_addresses|
