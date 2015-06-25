@@ -1,6 +1,7 @@
 #!/bin/bash
 
 schedule="$(cat /dev/stdin)"
+logdir="$1"
 lockdir="/tmp/testrunning"
 
 source $(dirname $0)/colors.sh
@@ -28,7 +29,7 @@ echo -e "${IBlue}Execution delayed by $master_delay seconds, expected end: $end$
 
 for host in $hosts; do
 	echo -e "${Green}Sending schedule to $host...$Color_Off"
-	echo "$schedule" | $ssh $host "/vagrant/code/scheduler.sh $start_time" &
+	echo "$schedule" | $ssh $host "/vagrant/code/scheduler.sh $start_time $logdir" &
 done
 
 sleep $(($duration + $master_delay + 2))

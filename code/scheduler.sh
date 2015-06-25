@@ -2,15 +2,17 @@
 
 source $(dirname $0)/colors.sh
 
-me=$(hostname)
-if [ "$2" ]; then
-	me=$2
-fi
-
 start_time="$1"
 now=$(date +%s)
 if [ $start_time == 0 ]; then
 	start_time=$now
+fi
+
+LOGDIR="$2"
+
+me=$(hostname)
+if [ "$3" ]; then
+	me=$3
 fi
 
 function run_delayed {
@@ -23,10 +25,15 @@ function run_delayed {
 
 while read -r line; do
 	if [[ $line =~ ^$me[[:space:]]+([0-9]+)[[:space:]]+(.*)$ ]]; then
+		if [ -z "$LOGDIR" ]; then
+			echo "Missing LOGDIR (usage $0 start_time log_dir [hostname] or hardcode it into .sched file)"
+			exit 1
+		fi
+		mkdir -p "$LOGDIR"
 		delay=${BASH_REMATCH[1]}
 		command=${BASH_REMATCH[2]}
 		run_delayed $delay "$command" &
-	elif [[ $line =~ \#eval[[:space:]]+(.*) ]]; then
+	elif [[ $line =~ ^\#eval[[:space:]]+(.*) ]]; then
 		command=${BASH_REMATCH[1]}
 		eval $command
 	fi

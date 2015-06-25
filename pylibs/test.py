@@ -38,7 +38,8 @@ class Test(object):
 				evt.kill_after = last_moment - evt.delay
 
 		events = sorted(self._events, key=lambda evt: evt.delay)
-		scheduler_commands = '#eval LOGDIR=/vagrant/tests/'+self.collection+'/'+self.name+'\n'
+		#scheduler_commands = '#eval LOGDIR=/vagrant/tests/'+self.collection+'/'+self.name+'\n' now injected from the scheduler
+		scheduler_commands = ''
 		for evt in events:
 			scheduler_commands += evt.commands() + '\n'
 			evt.add_test_infos(self)
