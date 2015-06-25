@@ -5,8 +5,10 @@ import cPickle as pickle
 from zipfile import PyZipFile
 from tempfile import NamedTemporaryFile
 
-def show(session, fig, export):
+def show(session, fig, export, size=None):
 	if export:
+		if size is None:
+			size = (22,12)
 		if isinstance(export, basestring):
 			export = [export]
 		for filename in export:
@@ -22,12 +24,12 @@ def show(session, fig, export):
 						zf.write(f.name, 'pylibs/pickle')
 					zf.writestr('__main__.py', "from pylibs.plot import plotSession\nimport cPickle as pickle\nfrom pkg_resources import resource_stream\nplotSession(pickle.load(resource_stream('pylibs', 'pickle')))")
 			else:
-				fig.set_size_inches(22,12)
+				fig.set_size_inches(size[0], size[1])
 				fig.savefig(filename, bbox_inches='tight')
 	else:
 		plt.show()
 
-def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
+def plotVLCSession(session, export = False, details=True, plot_start=0, plot_end=None, plot_size=None, thickness_factor=1):
 	if plot_end is None:
 		plot_end = session.duration
 	bandwidth_buffer_t, bandwidth_buffer_packets = session.bandwidth_buffer.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
@@ -36,7 +38,7 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 	fig = plt.figure()
 	ax_bits = None
 	i = 0
-	subplot_rows = len(session.VLClogs)*3+1
+	subplot_rows = len(session.VLClogs)*3+1 if details else len(session.VLClogs)*2
 	for VLClog in session.VLClogs:
 		ax_bits = plt.subplot2grid((subplot_rows, 1), (i, 0), rowspan=2, sharex=ax_bits)
 		ax_bits.set_ylabel('(bit/s)')
@@ -50,7 +52,7 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 			bwprofile_t = [t for t, v in bwprofile]
 			bwprofile_v = [v for t, v in bwprofile]
 			bwprofile_v = [bwprofile_v[0]] + bwprofile_v[:-1]
-			ax_bits.step(bwprofile_t, bwprofile_v, marker='.', markersize=1, linestyle=':', color='purple', linewidth=2, label='bw limit')
+			ax_bits.step(bwprofile_t, bwprofile_v, marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bw limit')
 
 		#client data
 		vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
@@ -58,14 +60,14 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 		for buffering in [e for e in vlc_events if e.buffering][1:]:
 			ax_bits.axvline(buffering.t/1000, alpha=0.8, linewidth=3, color='red')
 		#measured bandwidth
-		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], color='black', label='obtained bw')
+		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], color='black', label='obtained bw', linewidth=thickness_factor)
 		#stream requested
 		stream_requests = [VLClog.streams[evt.downloading_stream] if evt.downloading_stream is not None else None for evt in vlc_events]
-		ax_bits.step(vlc_t, stream_requests, color='green', label='stream requested')
+		ax_bits.step(vlc_t, stream_requests, color='green', label='stream requested', linewidth=thickness_factor)
 		#playout buffer
 		ax_buffer = ax_bits.twinx()
-		#ax_buffer.step(vlc_t, [evt.buffer for evt in vlc_events], color='blue', alpha=0.7)
-		ax_buffer.plot(vlc_approxbuffer_t, vlc_approxbuffer_v, color='blue', alpha=0.7)
+		#ax_buffer.step(vlc_t, [evt.buffer for evt in vlc_events], color='blue', alpha=0.7, linewidth=thickness_factor)
+		ax_buffer.plot(vlc_approxbuffer_t, vlc_approxbuffer_v, color='blue', alpha=0.7, linewidth=thickness_factor)
 		ax_buffer.set_ylabel('buffer (s)', color='blue')
 		for tl in ax_buffer.get_yticklabels():
 			tl.set_color('blue')
@@ -74,43 +76,47 @@ def plotVLCSession(session, export = False, plot_start=0, plot_end=None):
 		ax_bits.axis([plot_start, plot_end, 0, session.max_display_bits*1.1])
 		ax_buffer.axis([plot_start, plot_end, 0, None])
 
-		#avg bitrate
-		ax_buffer.text(plot_end*.99, 5, 'avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000), weight='semibold', ha='right')
+		if details:
+			#avg bitrate
+			ax_buffer.text(plot_end*.99, 5, 'avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000), weight='semibold', ha='right')
 
 		if i == 0:
 			handles, labels = ax_bits.get_legend_handles_labels()
-			handles += [plt.Line2D((0,1),(0,0), color='red'), plt.Line2D((0,1),(0,0), color='gray')]
-			labels += ['cwnd', 'ssthresh']
+			if details:
+				handles += [plt.Line2D((0,1),(0,0), color='red'), plt.Line2D((0,1),(0,0), color='gray')]
+				labels += ['cwnd', 'ssthresh']
 			ax_bits.legend(handles, labels, bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=5, mode="expand", borderaxespad=0.)
 
 		i += 2
 
-		#cwnd subplot
+		if details:
+			#cwnd subplot
+			ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
+			ax_packets.set_ylabel('packets')
+
+			for fourtuple, tcpp in VLClog.tcpprobe.split().iteritems():
+				tcpp_t, tcpp_events = tcpp.get_events(time_relative_to=session)
+				#tcpprobe
+				cwnd = [evt.snd_cwnd for evt in tcpp_events]
+				ax_packets.step(tcpp_t, cwnd, color='red', label='cwnd', linewidth=thickness_factor)
+				ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
+				ax_packets.step(tcpp_t, ssthresh, color='gray', label='ssthresh', linewidth=thickness_factor)
+
+			i += 1
+
+	if details:
 		ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
-		ax_packets.set_ylabel('packets')
+		ax_packets.set_ylabel('router buffer (packets)')
 
-		for fourtuple, tcpp in VLClog.tcpprobe.split().iteritems():
-			tcpp_t, tcpp_events = tcpp.get_events(time_relative_to=session)
-			#tcpprobe
-			cwnd = [evt.snd_cwnd for evt in tcpp_events]
-			ax_packets.step(tcpp_t, cwnd, color='red', label='cwnd')
-			ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
-			ax_packets.step(tcpp_t, ssthresh, color='gray', label='ssthresh')
+		#buffer
+		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, color='black', label='bw buffer', linewidth=thickness_factor)
+		#ax_packets.step(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer', linewidth=thickness_factor)
 
-		i += 1
+		ax_packets.axis([plot_start, plot_end, 0, max(bandwidth_buffer_packets)*1.1])
+		#handles, labels = ax_packets.get_legend_handles_labels()
+		#ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
-	ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
-	ax_packets.set_ylabel('router buffer (packets)')
-
-	#buffer
-	ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, color='black', label='bw buffer')
-	#ax_packets.step(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
-
-	ax_packets.axis([plot_start, plot_end, 0, max(bandwidth_buffer_packets)*1.1])
-	handles, labels = ax_packets.get_legend_handles_labels()
-	#ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
-
-	show(session, fig, export)
+	show(session, fig, export, plot_size)
 
 	plt.close()
 
@@ -195,7 +201,7 @@ def plotCompareSessions(grouped_sessions, export = False):
 
 	plt.close()
 
-def plotIperfSession(session, export = False, plot_start=0, plot_end=None):
+def plotIperfSession(session, export = False, details=None, plot_start=0, plot_end=None, plot_size=None, thickness_factor=None): #details and thickness_factor not implemented
 	if plot_end is None:
 		plot_end = session.duration
 	tcpprobe_t, tcpprobe_events = session.tcpprobe.get_events(time_relative_to=session)
@@ -270,11 +276,11 @@ def plotIperfSession(session, export = False, plot_start=0, plot_end=None):
 	if bw_text is not '':
 		ax_msec.text(plot_end, max(rtt)*1.2, bw_text, ha='right')
 
-	show(session, fig, export)
+	show(session, fig, export, plot_size)
 
 	plt.close()
 
-def plotSession(session, export = False, plot_start=0, plot_end=None):
+def plotSession(session, export = False, details=True, plot_start=0, plot_end=None, plot_size=None, thickness_factor=1):
 	plot_fn = None
 	if type(session) is log.IperfSession:
 		plot_fn = plotIperfSession
@@ -283,7 +289,7 @@ def plotSession(session, export = False, plot_start=0, plot_end=None):
 	if plot_fn is None:
 		print type(session), session, dir(session)
 		raise Exception('Not implemented')
-	return plot_fn(session, export, plot_start, plot_end)
+	return plot_fn(session, export, details, plot_start, plot_end, plot_size, thickness_factor)
 
 def open_pickle(filename):
 	with open(filename, 'r') as f:
