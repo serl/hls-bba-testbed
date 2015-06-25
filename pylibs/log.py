@@ -61,6 +61,7 @@ class VLCLog(Log):
 		self.streams = ()
 		self._composition_streams_id = ()
 		self.composition = ()
+		self.http_requests = []
 		self.tcpprobe = None
 		self.buffersize = 240
 
@@ -134,6 +135,9 @@ class VLCLog(Log):
 						evt.buffer_approx = evt.buffer
 					last_buffer_size = evt.buffer
 
+					if past_evt is not None and ( (not past_evt.downloading_active and evt.downloading_active) or (past_evt.downloading_active and evt.downloading_active and past_evt.downloading_segment < evt.downloading_segment) ):
+						inst.http_requests.append(evt.t)
+
 					#print line.strip()
 					#print evt.t, evt.playing_time, evt.buffer, evt.buffer_segments, evt.playing_stream, evt.playing_segment, evt.rebuffering, evt.downloading_stream, evt.downloading_segment, evt.downloading_active, evt.previous_bandwidth
 					inst.events[evt.t] = evt
@@ -192,8 +196,11 @@ class VLCSession(Session):
 		inst.add_log(inst.bandwidth_buffer)
 		inst.add_log(inst.delay_buffer)
 
+		sched_file = os.path.join(dirname, 'jobs.sched')
+		if not os.path.isfile(sched_file):
+			sched_file = os.path.normpath(os.path.join(dirname, '..', 'jobs.sched'))
 		session_re = re.compile('^#SESSION(.+)$')
-		with open(os.path.join(dirname, 'jobs.sched'), "r") as contents:
+		with open(sched_file, "r") as contents:
 			for line in contents:
 				#session line
 				match = session_re.match(line)

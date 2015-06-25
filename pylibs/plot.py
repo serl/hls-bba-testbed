@@ -58,15 +58,15 @@ def plotVLCSession(session, export = False, details=True, plot_start=0, plot_end
 		vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
 		vlc_approxbuffer_t, vlc_approxbuffer_v = VLClog.get_events(time_relative_to=session, values_fn=lambda evt: evt.buffer_approx, filter_fn=lambda evt: evt.buffer_approx is not None)
 		for buffering in [e for e in vlc_events if e.buffering][1:]:
-			ax_bits.axvline(buffering.t/1000, alpha=0.8, linewidth=3, color='red')
+			ax_bits.axvline(buffering.t - session.start_time, alpha=0.8, linewidth=3*thickness_factor, color='red')
 		#measured bandwidth
-		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], color='black', label='obtained bw', linewidth=thickness_factor)
+		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', label='obtained bw', linewidth=thickness_factor)
 		#stream requested
 		stream_requests = [VLClog.streams[evt.downloading_stream] if evt.downloading_stream is not None else None for evt in vlc_events]
-		ax_bits.step(vlc_t, stream_requests, color='green', label='stream requested', linewidth=thickness_factor)
+		ax_bits.step(vlc_t, stream_requests, where='post', color='green', label='stream requested', linewidth=thickness_factor)
 		#playout buffer
 		ax_buffer = ax_bits.twinx()
-		#ax_buffer.step(vlc_t, [evt.buffer for evt in vlc_events], color='blue', alpha=0.7, linewidth=thickness_factor)
+		#ax_buffer.step(vlc_t, [evt.buffer for evt in vlc_events], where='post', color='blue', alpha=0.7, linewidth=thickness_factor)
 		ax_buffer.plot(vlc_approxbuffer_t, vlc_approxbuffer_v, color='blue', alpha=0.7, linewidth=thickness_factor)
 		ax_buffer.set_ylabel('buffer (s)', color='blue')
 		for tl in ax_buffer.get_yticklabels():
@@ -98,9 +98,12 @@ def plotVLCSession(session, export = False, details=True, plot_start=0, plot_end
 				tcpp_t, tcpp_events = tcpp.get_events(time_relative_to=session)
 				#tcpprobe
 				cwnd = [evt.snd_cwnd for evt in tcpp_events]
-				ax_packets.step(tcpp_t, cwnd, color='red', label='cwnd', linewidth=thickness_factor)
+				ax_packets.step(tcpp_t, cwnd, where='post', color='red', label='cwnd', linewidth=thickness_factor)
 				ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
-				ax_packets.step(tcpp_t, ssthresh, color='gray', label='ssthresh', linewidth=thickness_factor)
+				ax_packets.step(tcpp_t, ssthresh, where='post', color='gray', label='ssthresh', linewidth=thickness_factor)
+
+			for req_time in VLClog.http_requests:
+				ax_packets.axvline(req_time - session.start_time, alpha=0.8, linestyle=':', linewidth=thickness_factor, color='black')
 
 			i += 1
 
@@ -109,8 +112,8 @@ def plotVLCSession(session, export = False, details=True, plot_start=0, plot_end
 		ax_packets.set_ylabel('router buffer (packets)')
 
 		#buffer
-		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, color='black', label='bw buffer', linewidth=thickness_factor)
-		#ax_packets.step(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer', linewidth=thickness_factor)
+		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, where='post', color='black', label='bw buffer', linewidth=thickness_factor)
+		#ax_packets.step(delay_buffer_t, delay_buffer_packets, where='post', color='purple', label='delay buffer', linewidth=thickness_factor)
 
 		ax_packets.axis([plot_start, plot_end, 0, max(bandwidth_buffer_packets)*1.1])
 		#handles, labels = ax_packets.get_legend_handles_labels()
