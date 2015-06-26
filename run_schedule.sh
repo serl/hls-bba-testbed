@@ -13,6 +13,10 @@ for schedule_file in "$@"; do
 	if [ -d $schedule_file ]; then
 		schedule_file="$schedule_file/jobs.sched"
 	fi
+	if [ ! -e $schedule_file ]; then
+		echo -e "${IRed}File $schedule_file does not exist${Color_Off}"
+		continue
+	fi
 	repetition=0
 	schedule_dir="$(dirname "$schedule_file")"
 
