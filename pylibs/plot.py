@@ -29,7 +29,7 @@ def show(session, fig, export, size=None):
 	else:
 		plt.show()
 
-def plotVLCSession(session, export = False, details=True, plot_start=0, plot_end=None, plot_size=None, thickness_factor=1):
+def plotVLCSession(session, export=False, details=True, plot_start=0, plot_end=None, plot_size=None, thickness_factor=1):
 	if plot_end is None:
 		plot_end = session.duration
 	bandwidth_buffer_t, bandwidth_buffer_packets = session.bandwidth_buffer.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
@@ -130,7 +130,7 @@ def format_bw(bits):
 		return str(bits / 1000) + 'kbit'
 	return str(bits)+'bit'
 
-def plotCompareSessions(grouped_sessions, export = False):
+def plotCompareSessions(grouped_sessions, export=False):
 	fig = plt.figure()
 	colors = ('blue', 'red')
 	exclude_segments = 40
@@ -204,7 +204,7 @@ def plotCompareSessions(grouped_sessions, export = False):
 
 	plt.close()
 
-def plotIperfSession(session, export = False, details=None, plot_start=0, plot_end=None, plot_size=None, thickness_factor=None): #details and thickness_factor not implemented
+def plotIperfSession(session, export=False, details=None, plot_start=0, plot_end=None, plot_size=None, thickness_factor=None): #details and thickness_factor not implemented
 	if plot_end is None:
 		plot_end = session.duration
 	tcpprobe_t, tcpprobe_events = session.tcpprobe.get_events(time_relative_to=session)
@@ -283,7 +283,7 @@ def plotIperfSession(session, export = False, details=None, plot_start=0, plot_e
 
 	plt.close()
 
-def plotSession(session, export = False, details=True, plot_start=0, plot_end=None, plot_size=None, thickness_factor=1):
+def plotSession(session, export=False, details=True, plot_start=0, plot_end=None, plot_size=None, thickness_factor=1):
 	plot_fn = None
 	if type(session) is log.IperfSession:
 		plot_fn = plotIperfSession
