@@ -78,7 +78,10 @@ class VLCLog(Log):
 				if evt.downloading_segment is not None:
 					previous_segment = evt.downloading_segment
 		for t, evt in self.events.iteritems():
-			evt.downloading_bandwidth = bandwidths[evt.downloading_segment] if evt.downloading_segment is not None else None
+			try:
+				evt.downloading_bandwidth = bandwidths[evt.downloading_segment] if evt.downloading_segment is not None else None
+			except:
+				evt.downloading_bandwidth = None #missing data! :(
 			del evt.previous_bandwidth
 
 	def count_buffering_events(self):
