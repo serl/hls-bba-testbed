@@ -1,11 +1,10 @@
 import log
-import matplotlib.pyplot as plt
 import numpy as np
 import cPickle as pickle
 from zipfile import PyZipFile
 from tempfile import NamedTemporaryFile
 
-def show(session, fig, export, size=None):
+def show(plt, session, fig, export, size=None):
 	if export:
 		if size is None:
 			size = (22,12)
@@ -29,7 +28,7 @@ def show(session, fig, export, size=None):
 	else:
 		plt.show()
 
-def plotVLCSession(session, export=False, details=True, plot_start=0, plot_end=None, plot_size=None, thickness_factor=1):
+def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_end=None, plot_size=None, thickness_factor=1):
 	if plot_end is None:
 		plot_end = session.duration
 	bandwidth_buffer_t, bandwidth_buffer_packets = session.bandwidth_buffer.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
@@ -119,7 +118,7 @@ def plotVLCSession(session, export=False, details=True, plot_start=0, plot_end=N
 		#handles, labels = ax_packets.get_legend_handles_labels()
 		#ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
-	show(session, fig, export, plot_size)
+	show(plt, session, fig, export, plot_size)
 
 	plt.close()
 
@@ -131,6 +130,11 @@ def format_bw(bits):
 	return str(bits)+'bit'
 
 def plotCompareSessions(grouped_sessions, export=False):
+	if export:
+		import matplotlib
+		matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
+
 	fig = plt.figure()
 	colors = ('blue', 'red')
 	exclude_segments = 40
@@ -204,7 +208,7 @@ def plotCompareSessions(grouped_sessions, export=False):
 
 	plt.close()
 
-def plotIperfSession(session, export=False, details=None, plot_start=0, plot_end=None, plot_size=None, thickness_factor=None): #details and thickness_factor not implemented
+def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plot_end=None, plot_size=None, thickness_factor=None): #details and thickness_factor not implemented
 	if plot_end is None:
 		plot_end = session.duration
 	tcpprobe_t, tcpprobe_events = session.tcpprobe.get_events(time_relative_to=session)
@@ -279,7 +283,7 @@ def plotIperfSession(session, export=False, details=None, plot_start=0, plot_end
 	if bw_text is not '':
 		ax_msec.text(plot_end, max(rtt)*1.2, bw_text, ha='right')
 
-	show(session, fig, export, plot_size)
+	show(plt, session, fig, export, plot_size)
 
 	plt.close()
 
@@ -292,7 +296,11 @@ def plotSession(session, export=False, details=True, plot_start=0, plot_end=None
 	if plot_fn is None:
 		print type(session), session, dir(session)
 		raise Exception('Not implemented')
-	return plot_fn(session, export, details, plot_start, plot_end, plot_size, thickness_factor)
+	if export:
+		import matplotlib
+		matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
+	return plot_fn(plt, session, export, details, plot_start, plot_end, plot_size, thickness_factor)
 
 def open_pickle(filename):
 	with open(filename, 'r') as f:
