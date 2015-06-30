@@ -22,16 +22,16 @@ if __name__ == "__main__":
 			t.generate_schedule()
 			num += 1
 
-	bandwidths = ('950kbit', '1mbit', '1.5mbit', '3mbit', '5mbit', '10mbit')
-	collection = 'constant_single_tearsofsteel_{0}_{1}p'.format(delay, buffer_size)
-	for algo in algorithms:
-		player = Player(delay=1, host='client0', algo=algo, url=tearsofsteel_url, kill_after=1130)
-		num = 1
-		for bw in bandwidths:
-			bwchange = BwChange(bw=bw, buffer_size=buffer_size)
-			t = Test(name='c{0:02d}_tearsofsteel_{1}_{2}'.format(num, bw, algo), collection=collection, player=player, init_bw=bwchange, packet_delay=delay)
-			t.generate_schedule()
-			num += 1
+	#bandwidths = ('950kbit', '1mbit', '1.5mbit', '3mbit', '5mbit', '10mbit')
+	#collection = 'constant_single_tearsofsteel_{0}_{1}p'.format(delay, buffer_size)
+	#for algo in algorithms:
+	#	player = Player(delay=1, host='client0', algo=algo, url=tearsofsteel_url, kill_after=1130)
+	#	num = 1
+	#	for bw in bandwidths:
+	#		bwchange = BwChange(bw=bw, buffer_size=buffer_size)
+	#		t = Test(name='c{0:02d}_tearsofsteel_{1}_{2}'.format(num, bw, algo), collection=collection, player=player, init_bw=bwchange, packet_delay=delay)
+	#		t.generate_schedule()
+	#		num += 1
 
 	bandwidths = ('650kbit', '950kbit', '1mbit', '1.5mbit', '2mbit', '5mbit', '10mbit')
 	collection = 'constant_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
