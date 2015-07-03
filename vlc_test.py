@@ -33,7 +33,7 @@ if __name__ == "__main__":
 	#		t.generate_schedule()
 	#		num += 1
 
-	bandwidths = ('650kbit', '950kbit', '1mbit', '1.5mbit', '2mbit', '5mbit', '10mbit')
+	bandwidths = ('650kbit', '950kbit', '1mbit', '1.5mbit', '2mbit', '2.5mbit', '3mbit', '3.5mbit', '4mbit', '5mbit', '10mbit')
 	collection = 'constant_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
 	for algo in algorithms:
 		player1 = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
