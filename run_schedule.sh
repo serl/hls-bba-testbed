@@ -8,7 +8,8 @@ if [[ $1 =~ ^[0-9]+$ ]]; then
 	shift
 fi
 
-exitcode=0
+vagrant up
+
 for schedule_file in "$@"; do
 	if [ -d $schedule_file ]; then
 		schedule_file="$schedule_file/jobs.sched"
@@ -30,11 +31,11 @@ for schedule_file in "$@"; do
 
 		echo -e "${IBlue}Running $schedule_file (run index: $run_index)...${Color_Off}"
 		vagrant ssh server --command "/vagrant/code/master_scheduler.sh /vagrant/$log_dir" -- -T < $schedule_file
-		exitcode=$?
 		sleep 1
 		echo
 		let repetition+=1
 	done
 done
-exit $exitcode
+
+vagrant suspend
 
