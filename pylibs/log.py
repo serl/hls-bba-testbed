@@ -1,4 +1,4 @@
-import sys, re, json, subprocess, os.path, traceback
+import sys, re, json, subprocess, os.path, traceback, collections
 from parallelize import Parallelize
 
 class LogEvent(object):
@@ -22,6 +22,20 @@ class Log(object):
 			time_fn = lambda evt: evt.t - time_relative_to
 		events = [evt for t, evt in sorted(self.events.iteritems()) if filter_fn(evt)]
 		return ([time_fn(evt) for evt in events], [values_fn(evt) for evt in events])
+	def get_value_at(self, time, values_fn=lambda evt: evt, compare_fn=None):
+		if compare_fn is None:
+			compare_fn = lambda a, b: values_fn(a) == values_fn(b)
+		value = None
+		try:
+			value = values_fn(self.events[time])
+		except KeyError:
+			try:
+				before_t = max([t for t in self.events.keys() if t <= time])
+				after_t = min([t for t in self.events.keys() if t >= time])
+				value = values_fn(self.events[before_t]) if compare_fn(self.events[before_t], self.events[after_t]) else None
+			except ValueError:
+				pass
+		return value
 	@classmethod
 	def parse(cls, *args, **kwargs):
 		raise Exception('Not implemented')
@@ -101,11 +115,17 @@ class VLCLog(Log):
 	def count_bitrate_changes(self, skip=0):
 		count = 0
 		last = self.composition[skip]
-		for b in self.composition[skip:]:
+		for b in self.composition[skip+1:]:
 			if b != last:
 				count += 1
 				last = b
 		return count
+
+	def get_instability(self):
+		if not hasattr(self, '_instability_cache'):
+			skip = 0 #or break caching system
+			self._instability_cache = float(self.count_bitrate_changes(skip)) / len(self.composition[skip:]) * 100
+		return self._instability_cache
 
 	@classmethod
 	def parse(cls, filename):
@@ -113,7 +133,7 @@ class VLCLog(Log):
 		algorithm_re = re.compile('^ALGORITHM: (.+)$')
 		streams_re = re.compile('^STREAMS: ([\d\s]*)$')
 		composition_re = re.compile('^DOWNLOAD COMPOSITION: (\d*)$')
-		event_re = re.compile('^T: ([\d\.]+), PLAYING TIME: (-?\d+)ms, BUFFER: (-?\d+)s \((-?\d+)\), PLAY STR/SEG \(buffering\): (\d+)/(\d+) \((\d+)\), DOWNLOAD STR/SEG \(active\): (\d+)/(\d+) \((\d+)\), BANDWIDTH: (\d+)$')
+		event_re = re.compile('^T: ([\d\.]+), PLAYING TIME: (-?\d+)ms, BUFFER: (-?\d+)s \((-?\d+)\), PLAY STR/SEG \(buffering\): (\d+)/(\d+) \((\d+)\), DOWNLOAD STR/SEG \(active\): (\d+)/(\d+) \((\d+)\), BANDWIDTH: (\d+)(, AVG BANDWIDTH: (\d+))?$')
 		past_evt = None
 		with open(filename, "r") as contents:
 			for line in contents:
@@ -132,6 +152,7 @@ class VLCLog(Log):
 					evt.downloading_stream = int(match.group(8)) if evt.downloading_active else None
 					evt.downloading_segment = int(match.group(9)) if evt.downloading_active else None
 					evt.previous_bandwidth = int(match.group(11))
+					evt.avg_bandwidth = int(match.group(13)) if match.group(13) is not None else None
 
 					evt.buffer_approx = None
 					if (not evt.downloading_active and not past_evt.downloading_active) or (past_evt is not None and past_evt.buffer < evt.buffer):
@@ -185,6 +206,124 @@ class VLCSession(Session):
 		self.name = ''
 		self.collection = ''
 		self.max_display_bits = 0
+
+	def get_unfairness(self, time_relative_to=None):
+		if time_relative_to is None:
+			time_relative_to = self
+		if Session in type(time_relative_to).__bases__:
+			time_relative_to = time_relative_to.start_time
+		if len(self.VLClogs) != 2:
+			raise Exception('No sense in trying to measure unfairness. Need exactly 2 clients.')
+		all_t = sorted(list(set(self.VLClogs[0].events.keys()) | set(self.VLClogs[1].events.keys())))
+		unfairness = collections.OrderedDict()
+		for t in all_t:
+			client0_bw = self.VLClogs[0].get_value_at(t, lambda evt: self.VLClogs[0].streams[evt.downloading_stream] if evt.downloading_stream is not None else None)
+			client1_bw = self.VLClogs[1].get_value_at(t, lambda evt: self.VLClogs[1].streams[evt.downloading_stream] if evt.downloading_stream is not None else None)
+			#unfairness[t - time_relative_to] = None
+			if client0_bw is not None and client1_bw is not None:
+				unfairness[t - time_relative_to] = abs(client0_bw - client1_bw)
+		return unfairness
+
+	def get_avg_unfairness(self):
+		unfairness = [u for t, u in self.get_unfairness().iteritems() if u is not None]
+		return float(sum(unfairness))/len(unfairness)
+
+	def get_fraction_oneidle(self): #nossdav-akhshabi gamma
+		if not hasattr(self, '_fraction_oneidle_cache'):
+			if len(self.VLClogs) != 2:
+				raise Exception('No sense in trying to measure gamma. Need exactly 2 clients.')
+			all_t = sorted(list(set(self.VLClogs[0].events.keys()) | set(self.VLClogs[1].events.keys())))
+			one_idle_time = 0
+			last_t = all_t[0]
+			last_activity = (False, False)
+			for t in all_t:
+				client0_on = self.VLClogs[0].get_value_at(t, lambda evt: evt.downloading_active, compare_fn=lambda a, b: True)
+				if client0_on is None:
+					client0_on = False
+				client1_on = self.VLClogs[1].get_value_at(t, lambda evt: evt.downloading_active, compare_fn=lambda a, b: True)
+				if client1_on is None:
+					client1_on = False
+
+				if client0_on ^ client1_on and last_activity == (client0_on, client1_on):
+					one_idle_time += t - last_t
+
+				last_t = t
+				last_activity = (client0_on, client1_on)
+
+			self._fraction_oneidle_cache = one_idle_time/self.duration
+
+		return self._fraction_oneidle_cache
+
+	def get_fairshare(self):
+		return max(self.bwprofile.values()) / len(self.clients)
+
+	def get_fraction_both_overestimating(self): #nossdav-akhshabi mu
+		if not hasattr(self, '_fraction_both_overestimating_cache'):
+			if len(self.VLClogs) != 2:
+				raise Exception('No sense in trying to measure gamma. Need exactly 2 clients.')
+			fairshare = self.get_fairshare()
+			all_t = sorted(list(set(self.VLClogs[0].events.keys()) | set(self.VLClogs[1].events.keys())))
+			both_overestimating_time = 0
+			last_t = all_t[0]
+			last_activity = (False, False)
+			for t in all_t:
+				client0_bw = self.VLClogs[0].get_value_at(t, lambda evt: evt.avg_bandwidth, compare_fn=lambda a, b: True)
+				if client0_bw is None:
+					client0_overestimating = False
+				else:
+					client0_overestimating = client0_bw > fairshare
+
+				client1_bw = self.VLClogs[1].get_value_at(t, lambda evt: evt.avg_bandwidth, compare_fn=lambda a, b: True)
+				if client1_bw is None:
+					client1_overestimating = False
+				else:
+					client1_overestimating = client1_bw > fairshare
+
+				if client0_overestimating and client1_overestimating and last_activity == (True, True):
+					both_overestimating_time += t - last_t
+
+				last_t = t
+				last_activity = (client0_overestimating, client1_overestimating)
+
+			self._fraction_both_overestimating_cache = both_overestimating_time/self.duration
+
+		return self._fraction_both_overestimating_cache
+
+	def get_fraction_both_on(self): #nossdav-akhshabi lambda
+		if not hasattr(self, '_fraction_both_on'):
+			if len(self.VLClogs) != 2:
+				raise Exception('No sense in trying to measure gamma. Need exactly 2 clients.')
+			all_t = sorted(list(set(self.VLClogs[0].events.keys()) | set(self.VLClogs[1].events.keys())))
+			c0_active = 0
+			c1_active = 0
+			both_active = 0
+			last_t = all_t[0]
+			last_activity = (False, False)
+			for t in all_t:
+				client0_on = self.VLClogs[0].get_value_at(t, lambda evt: evt.downloading_active, compare_fn=lambda a, b: True)
+				if client0_on is None:
+					client0_on = False
+				client1_on = self.VLClogs[1].get_value_at(t, lambda evt: evt.downloading_active, compare_fn=lambda a, b: True)
+				if client1_on is None:
+					client1_on = False
+
+				if client0_on and last_activity[0]:
+					c0_active += t - last_t
+
+				if client1_on and last_activity[1]:
+					c1_active += t - last_t
+
+				if client0_on and last_activity[0] and client1_on and last_activity[1]:
+					both_active += t - last_t
+
+				last_t = t
+				last_activity = (client0_on, client1_on)
+
+			fraction_c0 = both_active/c0_active
+			fraction_c1 = both_active/c1_active
+			self._fraction_both_on = fraction_c0 if fraction_c0 > fraction_c1 else fraction_c1
+
+		return self._fraction_both_on
 
 	@classmethod
 	def parse(cls, dirname):

@@ -38,9 +38,12 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 	ax_bits = None
 	i = 0
 	subplot_rows = len(session.VLClogs)*3+1 if details else len(session.VLClogs)*2
+	if len(session.VLClogs) == 2:
+		subplot_rows += 1
+
 	for VLClog in session.VLClogs:
 		ax_bits = plt.subplot2grid((subplot_rows, 1), (i, 0), rowspan=2, sharex=ax_bits)
-		ax_bits.set_ylabel('(bit/s)')
+		ax_bits.set_ylabel('(kbit/s)')
 
 		#session data
 		for stream in session.streams:
@@ -60,6 +63,8 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			ax_bits.axvline(buffering.t - session.start_time, alpha=0.8, linewidth=3*thickness_factor, color='red')
 		#measured bandwidth
 		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', label='obtained bw', linewidth=thickness_factor)
+		if vlc_events[0].avg_bandwidth is not None:
+			ax_bits.step(vlc_t, [evt.avg_bandwidth for evt in vlc_events], where='post', color='#441e00', alpha=0.7, label='avg bw', linewidth=thickness_factor)
 		#stream requested
 		stream_requests = [VLClog.streams[evt.downloading_stream] if evt.downloading_stream is not None else None for evt in vlc_events]
 		ax_bits.step(vlc_t, stream_requests, where='post', color='green', label='stream requested', linewidth=thickness_factor)
@@ -73,25 +78,27 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		ax_buffer.axhline(VLClog.buffersize, color='blue', linestyle='--')
 
 		ax_bits.axis([plot_start, plot_end, 0, session.max_display_bits*1.1])
+		locs = ax_bits.get_yticks()
+		ax_bits.set_yticklabels(map("{0:.0f}".format, locs/1000))
 		ax_buffer.axis([plot_start, plot_end, 0, None])
 
 		if details:
 			#avg bitrate
-			ax_buffer.text(plot_end*.99, 5, 'avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000), weight='semibold', ha='right')
+			ax_buffer.text(plot_end*.99, 5, 'avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s, instability: {2:.1f}%'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000, VLClog.get_instability()), weight='semibold', ha='right')
 
 		if i == 0:
 			handles, labels = ax_bits.get_legend_handles_labels()
 			if details:
 				handles += [plt.Line2D((0,1),(0,0), color='red'), plt.Line2D((0,1),(0,0), color='gray')]
 				labels += ['cwnd', 'ssthresh']
-			ax_bits.legend(handles, labels, bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=5, mode="expand", borderaxespad=0.)
+			ax_bits.legend(handles, labels, bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=6, mode="expand", borderaxespad=0.)
 
 		i += 2
 
 		if details:
 			#cwnd subplot
 			ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
-			ax_packets.set_ylabel('packets')
+			ax_packets.set_ylabel('(pkts)')
 
 			for fourtuple, tcpp in VLClog.tcpprobe.split().iteritems():
 				tcpp_t, tcpp_events = tcpp.get_events(time_relative_to=session)
@@ -108,7 +115,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 	if details:
 		ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
-		ax_packets.set_ylabel('router buffer (packets)')
+		ax_packets.set_ylabel('router buffer (pkts)')
 
 		#buffer
 		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, where='post', color='black', label='bw buffer', linewidth=thickness_factor)
@@ -117,6 +124,20 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		ax_packets.axis([plot_start, plot_end, 0, max(bandwidth_buffer_packets)*1.1])
 		#handles, labels = ax_packets.get_legend_handles_labels()
 		#ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
+
+		i += 1
+
+	if len(session.VLClogs) == 2:
+		unfairness = session.get_unfairness()
+		ax_unfairness = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
+		ax_unfairness.set_ylabel('unfairness (kbit/s)', color='#550000')
+		ax_unfairness.step(unfairness.keys(), unfairness.values(), where='post', color='#550000', linewidth=thickness_factor)
+		ax_unfairness.axis([plot_start, plot_end, 0, max(unfairness.values())*1.1])
+		ax_unfairness.text(plot_end*.99, max(unfairness.values())*0.05, 'avg unfairness: {0:.2f}kbit/s'.format(session.get_avg_unfairness()/1000), color='#550000', weight='semibold', ha='right')
+		locs = ax_unfairness.get_yticks()
+		ax_unfairness.set_yticklabels(map("{0:.0f}".format, locs/1000), color='#550000')
+
+		i += 1
 
 	show(plt, session, fig, export, plot_size)
 
@@ -284,6 +305,139 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 		ax_msec.text(plot_end, max(rtt)*1.2, bw_text, ha='right')
 
 	show(plt, session, fig, export, plot_size)
+
+	plt.close()
+
+def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
+	if export:
+		import matplotlib
+		matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
+	if size is None:
+		size = (22,12)
+
+	colors = ('red', 'green', 'blue')
+	fig = plt.figure()
+	i = 0
+	subplot_rows = len(sessions)
+
+	for session in sessions:
+		ax_bits = plt.subplot2grid((subplot_rows, 1), (i, 0))
+		ax_bits.set_ylabel('(kbit/s)')
+
+		for stream in session.streams:
+			ax_bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
+		if len(session.bwprofile):
+			bwprofile = sorted(session.bwprofile.iteritems())
+			bwprofile.append((session.duration, bwprofile[-1][1]))
+			bwprofile_t = [t for t, v in bwprofile]
+			bwprofile_v = [v for t, v in bwprofile]
+			bwprofile_v = [bwprofile_v[0]] + bwprofile_v[:-1]
+			ax_bits.step(bwprofile_t, bwprofile_v, marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bandwidth limit')
+
+		j = 0
+		for VLClog in session.VLClogs:
+			vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
+			stream_requests = [VLClog.streams[evt.downloading_stream] if (evt.downloading_stream is not None and evt.t in VLClog.http_requests) else None for evt in vlc_events]
+			ax_bits.step(vlc_t, stream_requests, where='post', label='stream requested (client {0})'.format(j+1), marker='+', markersize=6*thickness_factor, markeredgewidth=thickness_factor, linestyle='None', color=colors[j%len(colors)], alpha=0.7)
+			j += 1
+
+		if i == 0:
+			ax_bits.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=len(session.VLClogs)+1, mode="expand", borderaxespad=0.)
+
+		ax_bits.axis([0, session.duration, 0, session.max_display_bits*1.1])
+		locs = ax_bits.get_yticks()
+		ax_bits.set_yticklabels(map("{0:.0f}".format, locs/1000))
+
+		i += 1
+
+	if export:
+		fig.set_size_inches(size[0], size[1])
+		fig.savefig(export, bbox_inches='tight')
+	else:
+		plt.show()
+
+	plt.close()
+
+def plotScatters(sessions, export=False, thickness_factor=1):
+	if export:
+		import matplotlib
+		matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
+	fig = plt.figure()
+
+	gamma_session = []
+	gamma_player = [] #the same, but dduupplliiccaattee
+	mu = []
+	instability = []
+	fairshare_session = []
+	fairshare_player = []
+	lambda_session = []
+	lambda_player = []
+	unfairness = []
+	for session in sessions:
+		gamma = session.get_fraction_oneidle()
+		gamma_session.append(gamma)
+		mu.append(session.get_fraction_both_overestimating())
+		fairshare = session.get_fairshare()
+		fairshare_session.append(fairshare/1000)
+		lambdap = session.get_fraction_both_on()
+		lambda_session.append(lambdap)
+		unfairness.append(session.get_avg_unfairness()/1000)
+		for VLClog in session.VLClogs:
+			gamma_player.append(gamma)
+			instability.append(VLClog.get_instability())
+			fairshare_player.append(fairshare/1000)
+			lambda_player.append(lambdap)
+
+
+	ax_gamma_mu = plt.subplot2grid((4, 2), (0, 0))
+	ax_gamma_mu.set_xlabel(r'$\gamma$')
+	ax_gamma_mu.set_ylabel(r'$\mu$')
+	ax_gamma_mu.scatter(gamma_session, mu, marker='x')
+	ax_gamma_mu.axis([0, None, 0, None])
+
+	ax_gamma_inst = plt.subplot2grid((4, 2), (0, 1))
+	ax_gamma_inst.set_xlabel(r'$\gamma$')
+	ax_gamma_inst.set_ylabel('instability (%)')
+	ax_gamma_inst.scatter(gamma_player, instability, marker='x')#, markersize=2*thickness_factor, markeredgewidth=thickness_factor)
+	ax_gamma_inst.axis([0, None, 0, None])
+
+	ax_fairshare_inst = plt.subplot2grid((4, 2), (1, 0))
+	ax_fairshare_inst.set_xlabel('fair share (kbit/s)')
+	ax_fairshare_inst.set_ylabel('instability (%)')
+	ax_fairshare_inst.scatter(fairshare_player, instability, marker='x')#, markersize=2*thickness_factor, markeredgewidth=thickness_factor)
+	ax_fairshare_inst.axis([0, None, 0, None])
+
+	ax_lambda_inst = plt.subplot2grid((4, 2), (1, 1))
+	ax_lambda_inst.set_xlabel(r'$\lambda$')
+	ax_lambda_inst.set_ylabel('instability (%)')
+	ax_lambda_inst.scatter(lambda_player, instability, marker='x')
+	ax_lambda_inst.axis([0, None, 0, None])
+
+	ax_gamma_unfairness = plt.subplot2grid((4, 2), (2, 1))
+	ax_gamma_unfairness.set_xlabel(r'$\gamma$')
+	ax_gamma_unfairness.set_ylabel('unfairness (kbit/s)')
+	ax_gamma_unfairness.scatter(gamma_session, unfairness, marker='x')#, markersize=2*thickness_factor, markeredgewidth=thickness_factor)
+	ax_gamma_unfairness.axis([0, None, 0, None])
+
+	ax_fairshare_unfairness = plt.subplot2grid((4, 2), (3, 0))
+	ax_fairshare_unfairness.set_xlabel('fair share (kbit/s)')
+	ax_fairshare_unfairness.set_ylabel('unfairness (kbit/s)')
+	ax_fairshare_unfairness.scatter(fairshare_session, unfairness, marker='x')#, markersize=2*thickness_factor, markeredgewidth=thickness_factor)
+	ax_fairshare_unfairness.axis([0, None, 0, None])
+
+	ax_lambda_unfairness = plt.subplot2grid((4, 2), (3, 1))
+	ax_lambda_unfairness.set_xlabel(r'$\lambda$')
+	ax_lambda_unfairness.set_ylabel('unfairness (kbit/s)')
+	ax_lambda_unfairness.scatter(lambda_session, unfairness, marker='x')
+	ax_lambda_unfairness.axis([0, None, 0, None])
+
+	if export:
+		fig.set_size_inches(22,12)
+		fig.savefig(export, bbox_inches='tight')
+	else:
+		plt.show()
 
 	plt.close()
 

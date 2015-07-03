@@ -22,5 +22,6 @@ if __name__ == "__main__":
 		session = VLCSession.parse(filename)
 		print "Plotting {0}...".format(filename)
 		plotSession(session, [os.path.join('tests', session.collection, session.name + run + '.' + ext) for ext in ('pyz', 'png')] if export else False)
+		#plotSession(session, os.path.join('tests', session.collection, session.name + run + '_slides.png'), plot_size=(11,7), thickness_factor=2)
 		#plotSession(session, os.path.join('tests', session.collection, session.name + run + '_detail.png'), details=False, plot_start=450, plot_end=700, plot_size=(11,7), thickness_factor=2)
 
