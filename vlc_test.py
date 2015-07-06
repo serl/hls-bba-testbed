@@ -7,10 +7,10 @@ bigbuckbunny_url = server_url + '/bbb/bigbuckbunny.m3u8' # rates: 290400 510400 
 
 
 if __name__ == "__main__":
-	algorithms = ('classic', 'bba0')
 	delay = '200ms'
 	buffer_size = 200
 
+	algorithms = ('classic', 'bba0')
 	bandwidths = ('300kbit', '650kbit', '950kbit', '1mbit', '1.5mbit', '2mbit', '5mbit', '10mbit')
 	collection = 'constant_single_bipbop_{0}_{1}p'.format(delay, buffer_size)
 	for algo in algorithms:
@@ -33,6 +33,7 @@ if __name__ == "__main__":
 	#		t.generate_schedule()
 	#		num += 1
 
+	algorithms = ('classic', 'classic-2', 'bba0')
 	bandwidths = ('650kbit', '950kbit', '1mbit', '1.5mbit', '2mbit', '2.5mbit', '3mbit', '3.5mbit', '4mbit', '5mbit', '10mbit')
 	collection = 'constant_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
 	for algo in algorithms:
@@ -47,6 +48,7 @@ if __name__ == "__main__":
 			t.generate_schedule()
 			num += 1
 
+	algorithms = ('classic', 'bba0')
 	collection = 'constant_two_del_bipbop_{0}_{1}p'.format(delay, buffer_size)
 	for algo in algorithms:
 		player1 = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2330)
@@ -60,6 +62,7 @@ if __name__ == "__main__":
 			t.generate_schedule()
 			num += 1
 
+	algorithms = ('classic', 'bba0')
 	bandwidths_coll = [
 		{0: '5mbit', 200: '2mbit', 500: '5mbit', 800: '1mbit', 1100: '5mbit'},
 		{0: '5mbit', 250: '4mbit', 500: '3mbit', 750: '2mbit', 1000: '1mbit', 1250: '5mbit'},
