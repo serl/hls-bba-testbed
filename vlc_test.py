@@ -10,7 +10,7 @@ if __name__ == "__main__":
 	delay = '200ms'
 	buffer_size = 200
 
-	algorithms = ('classic-2', )
+	algorithms = ('classic-2', 'classic-2-8')
 	bandwidths = ('600kbit', '800kbit', '1000kbit', '1200kbit', '1400kbit', '1600kbit', '1800kbit', '2000kbit', '2200kbit', '2400kbit', '2600kbit', '2800kbit', '3000kbit', '3200kbit', '3400kbit', '3600kbit', '3800kbit', '4000kbit', '4200kbit', '4400kbit')
 	collection = 'constant_range_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
 	for algo in algorithms:
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 	#		t.generate_schedule()
 	#		num += 1
 
-	algorithms = ('classic', 'classic-2', 'bba0')
+	algorithms = ('classic', 'classic-2', 'classic-2-8', 'bba0')
 	bandwidths = ('650kbit', '950kbit', '1mbit', '1.5mbit', '2mbit', '2.5mbit', '3mbit', '3.5mbit', '4mbit', '5mbit', '10mbit')
 	collection = 'constant_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
 	for algo in algorithms:
