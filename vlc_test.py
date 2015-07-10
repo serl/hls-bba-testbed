@@ -10,6 +10,21 @@ if __name__ == "__main__":
 	delay = '200ms'
 	buffer_size = 200
 
+	algorithms = ('classic-2', )
+	bandwidths = ('600kbit', '800kbit', '1000kbit', '1200kbit', '1400kbit', '1600kbit', '1800kbit', '2000kbit', '2200kbit', '2400kbit', '2600kbit', '2800kbit', '3000kbit', '3200kbit', '3400kbit', '3600kbit', '3800kbit', '4000kbit', '4200kbit', '4400kbit')
+	collection = 'constant_range_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
+	for algo in algorithms:
+		player1 = Player(delay=1, host='client0', algo=algo, url=bipbop_url, kill_after=2000)
+		player2 = Player(delay=1, host='client1', algo=algo, url=bipbop_url, kill_after=2000)
+		num = 1
+		for bw in bandwidths:
+			bwchange = BwChange(bw=bw, buffer_size=buffer_size)
+			t = Test(name='c{0:02d}_range_two_con_bipbop_{1}_{2}'.format(num, bw, algo), collection=collection, init_bw=bwchange, packet_delay=delay)
+			t.add_event(player1)
+			t.add_event(player2)
+			t.generate_schedule()
+			num += 1
+
 	algorithms = ('classic', 'bba0')
 	bandwidths = ('300kbit', '650kbit', '950kbit', '1mbit', '1.5mbit', '2mbit', '5mbit', '10mbit')
 	collection = 'constant_single_bipbop_{0}_{1}p'.format(delay, buffer_size)
