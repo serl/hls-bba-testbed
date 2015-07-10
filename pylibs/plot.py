@@ -75,7 +75,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		ax_buffer.set_ylabel('buffer (s)', color='blue')
 		for tl in ax_buffer.get_yticklabels():
 			tl.set_color('blue')
-		ax_buffer.axhline(VLClog.buffersize, color='blue', linestyle='--')
+		#ax_buffer.axhline(VLClog.buffersize, color='blue', linestyle='--')
 
 		ax_bits.axis([plot_start, plot_end, 0, session.max_display_bits*1.1])
 		locs = ax_bits.get_yticks()

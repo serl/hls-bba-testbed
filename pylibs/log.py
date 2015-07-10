@@ -36,6 +36,17 @@ class Log(object):
 			except ValueError:
 				pass
 		return value
+	def get_step_value_at(self, time, values_fn=lambda evt: evt):
+		value = None
+		try:
+			value = values_fn(self.events[time])
+		except KeyError:
+			try:
+				before_t = max([t for t in self.events.keys() if t <= time])
+				value = values_fn(self.events[before_t])
+			except ValueError:
+				pass
+		return value
 	@classmethod
 	def parse(cls, *args, **kwargs):
 		raise Exception('Not implemented')
@@ -217,18 +228,31 @@ class VLCSession(Session):
 		all_t = sorted(list(set(self.VLClogs[0].events.keys()) | set(self.VLClogs[1].events.keys())))
 		unfairness = collections.OrderedDict()
 		for t in all_t:
-			client0_bw = self.VLClogs[0].get_value_at(t, lambda evt: self.VLClogs[0].streams[evt.downloading_stream] if evt.downloading_stream is not None else None)
-			client1_bw = self.VLClogs[1].get_value_at(t, lambda evt: self.VLClogs[1].streams[evt.downloading_stream] if evt.downloading_stream is not None else None)
+			client0_bw = self.VLClogs[0].get_step_value_at(t, lambda evt: self.VLClogs[0].streams[evt.downloading_stream] if evt.downloading_stream is not None else None)
+			client1_bw = self.VLClogs[1].get_step_value_at(t, lambda evt: self.VLClogs[1].streams[evt.downloading_stream] if evt.downloading_stream is not None else None)
 			#unfairness[t - time_relative_to] = None
 			if client0_bw is not None and client1_bw is not None:
 				unfairness[t - time_relative_to] = abs(client0_bw - client1_bw)
 		return unfairness
 
 	def get_avg_unfairness(self):
-		unfairness = [u for t, u in self.get_unfairness().iteritems() if u is not None]
-		return float(sum(unfairness))/len(unfairness)
+		last_t = None
+		last_value = None
+		wsum = 0.0
+		wlen = 0.0
+		for t, value in self.get_unfairness().iteritems():
+			if last_t is None:
+				last_t = t
+				last_value = value
+				continue
+			weight = t - last_t
+			wlen += weight
+			wsum += weight * last_value
+			last_t = t
+			last_value = value
+		return wsum/wlen
 
-	def get_fraction_oneidle(self): #nossdav-akhshabi gamma
+	def get_fraction_oneidle(self): #nossdav-akhshabi gamma: fraction of time with exactly one client off
 		if not hasattr(self, '_fraction_oneidle_cache'):
 			if len(self.VLClogs) != 2:
 				raise Exception('No sense in trying to measure gamma. Need exactly 2 clients.')
@@ -237,10 +261,10 @@ class VLCSession(Session):
 			last_t = all_t[0]
 			last_activity = (False, False)
 			for t in all_t:
-				client0_on = self.VLClogs[0].get_value_at(t, lambda evt: evt.downloading_active, compare_fn=lambda a, b: True)
+				client0_on = self.VLClogs[0].get_step_value_at(t, lambda evt: evt.downloading_active)
 				if client0_on is None:
 					client0_on = False
-				client1_on = self.VLClogs[1].get_value_at(t, lambda evt: evt.downloading_active, compare_fn=lambda a, b: True)
+				client1_on = self.VLClogs[1].get_step_value_at(t, lambda evt: evt.downloading_active)
 				if client1_on is None:
 					client1_on = False
 
@@ -263,27 +287,28 @@ class VLCSession(Session):
 				raise Exception('No sense in trying to measure gamma. Need exactly 2 clients.')
 			fairshare = self.get_fairshare()
 			all_t = sorted(list(set(self.VLClogs[0].events.keys()) | set(self.VLClogs[1].events.keys())))
-			both_overestimating_time = 0
+			both_overestimating_time = 0.0
 			last_t = all_t[0]
 			last_activity = (False, False)
 			for t in all_t:
-				client0_bw = self.VLClogs[0].get_value_at(t, lambda evt: evt.avg_bandwidth, compare_fn=lambda a, b: True)
+				client0_bw = self.VLClogs[0].get_step_value_at(t, lambda evt: evt.avg_bandwidth)
 				if client0_bw is None:
 					client0_overestimating = False
 				else:
 					client0_overestimating = client0_bw > fairshare
 
-				client1_bw = self.VLClogs[1].get_value_at(t, lambda evt: evt.avg_bandwidth, compare_fn=lambda a, b: True)
+				client1_bw = self.VLClogs[1].get_step_value_at(t, lambda evt: evt.avg_bandwidth)
 				if client1_bw is None:
 					client1_overestimating = False
 				else:
 					client1_overestimating = client1_bw > fairshare
 
-				if client0_overestimating and client1_overestimating and last_activity == (True, True):
+				current_activity = (client0_overestimating, client1_overestimating)
+				if current_activity == (True, True) and last_activity == (True, True):
 					both_overestimating_time += t - last_t
 
 				last_t = t
-				last_activity = (client0_overestimating, client1_overestimating)
+				last_activity = current_activity
 
 			self._fraction_both_overestimating_cache = both_overestimating_time/self.duration
 
@@ -294,16 +319,16 @@ class VLCSession(Session):
 			if len(self.VLClogs) != 2:
 				raise Exception('No sense in trying to measure gamma. Need exactly 2 clients.')
 			all_t = sorted(list(set(self.VLClogs[0].events.keys()) | set(self.VLClogs[1].events.keys())))
-			c0_active = 0
-			c1_active = 0
-			both_active = 0
+			c0_active = 0.0
+			c1_active = 0.0
+			both_active = 0.0
 			last_t = all_t[0]
 			last_activity = (False, False)
 			for t in all_t:
-				client0_on = self.VLClogs[0].get_value_at(t, lambda evt: evt.downloading_active, compare_fn=lambda a, b: True)
+				client0_on = self.VLClogs[0].get_step_value_at(t, lambda evt: evt.downloading_active)
 				if client0_on is None:
 					client0_on = False
-				client1_on = self.VLClogs[1].get_value_at(t, lambda evt: evt.downloading_active, compare_fn=lambda a, b: True)
+				client1_on = self.VLClogs[1].get_step_value_at(t, lambda evt: evt.downloading_active)
 				if client1_on is None:
 					client1_on = False
 
@@ -321,7 +346,7 @@ class VLCSession(Session):
 
 			fraction_c0 = both_active/c0_active
 			fraction_c1 = both_active/c1_active
-			self._fraction_both_on = fraction_c0 if fraction_c0 > fraction_c1 else fraction_c1
+			self._fraction_both_on = max(fraction_c0, fraction_c1)
 
 		return self._fraction_both_on
 

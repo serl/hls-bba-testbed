@@ -1,9 +1,9 @@
 from pylibs.test import Test, Player, BwChange, DelayChange
 
 server_url = 'http://192.168.100.10:3000/static'
-bipbop_url = server_url + '/bb/bipbop_4x3_variant_onlyvideo.m3u8' # rates: 232370 649879 991714 1927833, duration (s): ~1800
-tearsofsteel_url = server_url + '/ts/vM7nH0Kl.m3u8' # rates: 380000 670000 1710000 3400000, duration (s): ~734
-bigbuckbunny_url = server_url + '/bbb/bigbuckbunny.m3u8' # rates: 290400 510400 1170400 2820400, duration (s): ~597
+bipbop_url = server_url + '/bb/bipbop_4x3_variant_onlyvideo_size.m3u8' # rates: 232370 649879 991714 1927833, duration (s): ~1800
+tearsofsteel_url = server_url + '/ts/vM7nH0Kl_size.m3u8' # rates: 380000 670000 1710000 3400000, duration (s): ~734
+bigbuckbunny_url = server_url + '/bbb/bigbuckbunny_size.m3u8' # rates: 290400 510400 1170400 2820400, duration (s): ~597
 
 
 if __name__ == "__main__":
