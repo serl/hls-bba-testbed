@@ -37,5 +37,5 @@ for schedule_file in "$@"; do
 	done
 done
 
-vagrant suspend
+vagrant halt
 
