@@ -3,12 +3,20 @@
 source code/colors.sh
 
 repeat=1
-if [[ $1 =~ ^[0-9]+$ ]]; then
-	repeat=$1
+dry_run="false"
+if [[ $1 =~ ^-?[0-9]+$ ]]; then
+	if [ $1 -lt 0 ]; then
+		repeat=$((-$1))
+		dry_run="true"
+	else
+		repeat=$1
+	fi
 	shift
 fi
 
-vagrant up
+if [ "$dry_run" == "false" ]; then
+	vagrant up
+fi
 
 for schedule_file in "$@"; do
 	if [ -d $schedule_file ]; then
@@ -28,14 +36,21 @@ for schedule_file in "$@"; do
 			let run_index+=1
 			log_dir="$schedule_dir/$run_index"
 		done
+		mkdir -p "$log_dir"
 
-		echo -e "${IBlue}Running $schedule_file (run index: $run_index)...${Color_Off}"
-		vagrant ssh server --command "/vagrant/code/master_scheduler.sh /vagrant/$log_dir" -- -T < $schedule_file
-		sleep 1
-		echo
+		if [ "$dry_run" == "false" ]; then
+			echo -e "${IBlue}Running $schedule_file (run index: $run_index)...${Color_Off}"
+			vagrant ssh server --command "/vagrant/code/master_scheduler.sh /vagrant/$log_dir" -- -T < $schedule_file
+			sleep 1
+			echo
+		else
+			echo -e "${IBlue}Dry run of $schedule_file (run index: $run_index).${Color_Off}"
+		fi
 		let repetition+=1
 	done
 done
 
-vagrant halt
+if [ "$dry_run" == "false" ]; then
+	vagrant halt
+fi
 
