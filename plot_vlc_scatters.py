@@ -1,6 +1,7 @@
 import sys, os
 from pylibs.log import VLCSession
 from pylibs.plot import plotScatters
+from pylibs.parallelize import Parallelize
 
 if __name__ == "__main__":
 	filenames = sys.argv[1:]
@@ -14,17 +15,21 @@ if __name__ == "__main__":
 	for filename in filenames:
 		filename = filename.rstrip(os.sep)
 		run = 1
+		funcs = []
 		while True:
 			runpath = os.path.join(filename, str(run))
 			if not os.path.isdir(runpath):
 				break
 			print "Reading {0} run {1}...".format(filename, run)
-			session = VLCSession.parse(runpath)
-			sessions.append(session)
+			funcs.append({'args': (runpath,)})
 			run += 1
-		if len(sessions) == 0:
+		p = Parallelize(funcs, fn=VLCSession.parse)
+		p.run()
+		if len(p.results) == 0:
 			print "No runs in {0}".format(filename)
 			continue
+		for session in p.results:
+			sessions.append(session)
 
 	print "Plotting..."
 	plotScatters(sessions, export, thickness_factor=2)

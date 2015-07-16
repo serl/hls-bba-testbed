@@ -309,6 +309,7 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 	plt.close()
 
 def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
+	details = True
 	if export:
 		import matplotlib
 		matplotlib.use('Agg')
@@ -334,17 +335,27 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 			bwprofile_v = [v for t, v in bwprofile]
 			bwprofile_v = [bwprofile_v[0]] + bwprofile_v[:-1]
 			ax_bits.step(bwprofile_t, bwprofile_v, marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bandwidth limit')
+			if details:
+				ax_bits.step(bwprofile_t, [v/len(session.VLClogs) for v in bwprofile_v], linestyle='--', color='purple', linewidth=thickness_factor/2, alpha=0.8)
 
 		j = 0
 		for VLClog in session.VLClogs:
 			vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
 			stream_requests = [VLClog.streams[evt.downloading_stream] if (evt.downloading_stream is not None and evt.t in VLClog.http_requests) else None for evt in vlc_events]
 			ax_bits.step(vlc_t, stream_requests, where='post', label='stream requested (client {0})'.format(j+1), marker='+', markersize=6*thickness_factor, markeredgewidth=thickness_factor, linestyle='None', color=colors[j%len(colors)], alpha=0.7)
+			if details:
+				#bandwidth
+				#ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', linewidth=thickness_factor/2)
+				if vlc_events[0].avg_bandwidth is not None:
+					ax_bits.step(vlc_t, [evt.avg_bandwidth for evt in vlc_events], where='post', color='#441e00', alpha=0.7, linewidth=thickness_factor/2)
+
 			j += 1
 
 		if i == 0:
 			ax_bits.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=len(session.VLClogs)+1, mode="expand", borderaxespad=0.)
 
+		if details:
+			ax_bits.text(session.duration*.99, session.max_display_bits, 'gamma: {0:.2f}, mu: {1:.2f}, instability: {2:.1f}%'.format(session.get_fraction_oneidle(), session.get_fraction_both_overestimating(), VLClog.get_instability()), weight='semibold', ha='right')
 		ax_bits.axis([0, session.duration, 0, session.max_display_bits*1.1])
 		locs = ax_bits.get_yticks()
 		ax_bits.set_yticklabels(map("{0:.0f}".format, locs/1000))
@@ -365,10 +376,15 @@ def plotScatters(sessions, export=False, thickness_factor=1):
 		matplotlib.use('Agg')
 	import matplotlib.pyplot as plt
 	fig = plt.figure()
+	plot_instability = True
+	plot_unfairness = False
+	plot_rows = 2 * (int(plot_instability) + int(plot_unfairness)) + 1
 
 	gamma_session = []
 	gamma_player = [] #the same, but dduupplliiccaattee
 	mu = []
+	mu_dry = []
+	mu_bitrate = []
 	instability = []
 	fairshare_session = []
 	fairshare_player = []
@@ -379,59 +395,86 @@ def plotScatters(sessions, export=False, thickness_factor=1):
 		gamma = session.get_fraction_oneidle()
 		gamma_session.append(gamma)
 		mu.append(session.get_fraction_both_overestimating())
-		fairshare = session.get_fairshare()
-		fairshare_session.append(fairshare/1000)
+		mu_dry.append(session.get_fraction_both_overestimating(what='downloading_bandwidth'))
+		mu_bitrate.append(session.get_fraction_both_overestimating(what='downloading_bitrate'))
+		fairshare = session.get_fairshare()/1000
+		fairshare_session.append(fairshare)
 		lambdap = session.get_fraction_both_on()
 		lambda_session.append(lambdap)
-		unfairness.append(session.get_avg_unfairness()/1000)
+		if plot_unfairness:
+			unfairness.append(session.get_avg_unfairness()/1000)
 		for VLClog in session.VLClogs:
 			gamma_player.append(gamma)
-			instability.append(VLClog.get_instability())
-			fairshare_player.append(fairshare/1000)
+			if plot_instability:
+				instability.append(VLClog.get_instability())
+			fairshare_player.append(fairshare)
 			lambda_player.append(lambdap)
 
+	row = 0
 
-	ax_gamma_mu = plt.subplot2grid((4, 2), (0, 0))
+	ax_gamma_mu = plt.subplot2grid((plot_rows, 2), (row, 0))
 	ax_gamma_mu.set_xlabel(r'$\gamma$')
 	ax_gamma_mu.set_ylabel(r'$\mu$')
-	ax_gamma_mu.scatter(gamma_session, mu, marker='x')
+	ax_gamma_mu.scatter(gamma_session, mu, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
 	ax_gamma_mu.axis([0, None, 0, None])
 
-	ax_gamma_inst = plt.subplot2grid((4, 2), (0, 1))
-	ax_gamma_inst.set_xlabel(r'$\gamma$')
-	ax_gamma_inst.set_ylabel('instability (%)')
-	ax_gamma_inst.scatter(gamma_player, instability, marker='x')#, markersize=2*thickness_factor, markeredgewidth=thickness_factor)
-	ax_gamma_inst.axis([0, None, 0, None])
+	if plot_instability:
+		ax_gamma_inst = plt.subplot2grid((plot_rows, 2), (row, 1))
+		ax_gamma_inst.set_xlabel(r'$\gamma$')
+		ax_gamma_inst.set_ylabel('instability (%)')
+		ax_gamma_inst.scatter(gamma_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=plt.get_cmap('cool'))
+		ax_gamma_inst.axis([0, None, 0, None])
+		row += 1
 
-	ax_fairshare_inst = plt.subplot2grid((4, 2), (1, 0))
-	ax_fairshare_inst.set_xlabel('fair share (kbit/s)')
-	ax_fairshare_inst.set_ylabel('instability (%)')
-	ax_fairshare_inst.scatter(fairshare_player, instability, marker='x')#, markersize=2*thickness_factor, markeredgewidth=thickness_factor)
-	ax_fairshare_inst.axis([0, None, 0, None])
+		ax_fairshare_inst = plt.subplot2grid((plot_rows, 2), (row, 0))
+		ax_fairshare_inst.set_xlabel('fair share (kbit/s)')
+		ax_fairshare_inst.set_ylabel('instability (%)')
+		ax_fairshare_inst.scatter(fairshare_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=plt.get_cmap('cool'))
+		for s in sessions[0].streams:
+			ax_fairshare_inst.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
+		ax_fairshare_inst.axis([0, None, 0, None])
 
-	ax_lambda_inst = plt.subplot2grid((4, 2), (1, 1))
-	ax_lambda_inst.set_xlabel(r'$\lambda$')
-	ax_lambda_inst.set_ylabel('instability (%)')
-	ax_lambda_inst.scatter(lambda_player, instability, marker='x')
-	ax_lambda_inst.axis([0, None, 0, None])
+		ax_lambda_inst = plt.subplot2grid((plot_rows, 2), (row, 1))
+		ax_lambda_inst.set_xlabel(r'$\lambda$')
+		ax_lambda_inst.set_ylabel('instability (%)')
+		ax_lambda_inst.scatter(lambda_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=plt.get_cmap('cool'))
+		ax_lambda_inst.axis([0, None, 0, None])
+		row += 1
 
-	ax_gamma_unfairness = plt.subplot2grid((4, 2), (2, 1))
-	ax_gamma_unfairness.set_xlabel(r'$\gamma$')
-	ax_gamma_unfairness.set_ylabel('unfairness (kbit/s)')
-	ax_gamma_unfairness.scatter(gamma_session, unfairness, marker='x')#, markersize=2*thickness_factor, markeredgewidth=thickness_factor)
-	ax_gamma_unfairness.axis([0, None, 0, None])
+	if plot_unfairness:
+		ax_gamma_unfairness = plt.subplot2grid((plot_rows, 2), (row, 1))
+		ax_gamma_unfairness.set_xlabel(r'$\gamma$')
+		ax_gamma_unfairness.set_ylabel('unfairness (kbit/s)')
+		ax_gamma_unfairness.scatter(gamma_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+		ax_gamma_unfairness.axis([0, None, 0, None])
+		row += 1
 
-	ax_fairshare_unfairness = plt.subplot2grid((4, 2), (3, 0))
-	ax_fairshare_unfairness.set_xlabel('fair share (kbit/s)')
-	ax_fairshare_unfairness.set_ylabel('unfairness (kbit/s)')
-	ax_fairshare_unfairness.scatter(fairshare_session, unfairness, marker='x')#, markersize=2*thickness_factor, markeredgewidth=thickness_factor)
-	ax_fairshare_unfairness.axis([0, None, 0, None])
+		ax_fairshare_unfairness = plt.subplot2grid((plot_rows, 2), (row, 0))
+		ax_fairshare_unfairness.set_xlabel('fair share (kbit/s)')
+		ax_fairshare_unfairness.set_ylabel('unfairness (kbit/s)')
+		ax_fairshare_unfairness.scatter(fairshare_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+		for s in sessions[0].streams:
+			ax_fairshare_inst.axvline(s/1000, alpha=0.8, linewidth=2*thickness_factor, color='red')
+		ax_fairshare_unfairness.axis([0, None, 0, None])
 
-	ax_lambda_unfairness = plt.subplot2grid((4, 2), (3, 1))
-	ax_lambda_unfairness.set_xlabel(r'$\lambda$')
-	ax_lambda_unfairness.set_ylabel('unfairness (kbit/s)')
-	ax_lambda_unfairness.scatter(lambda_session, unfairness, marker='x')
-	ax_lambda_unfairness.axis([0, None, 0, None])
+		ax_lambda_unfairness = plt.subplot2grid((plot_rows, 2), (row, 1))
+		ax_lambda_unfairness.set_xlabel(r'$\lambda$')
+		ax_lambda_unfairness.set_ylabel('unfairness (kbit/s)')
+		ax_lambda_unfairness.scatter(lambda_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+		ax_lambda_unfairness.axis([0, None, 0, None])
+		row += 1
+
+	ax_gamma_mu_dry = plt.subplot2grid((plot_rows, 2), (row, 0))
+	ax_gamma_mu_dry.set_xlabel(r'$\gamma$')
+	ax_gamma_mu_dry.set_ylabel(r'$\mu$ dry')
+	ax_gamma_mu_dry.scatter(gamma_session, mu_dry, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+	ax_gamma_mu_dry.axis([0, None, 0, None])
+
+	ax_gamma_mu_bitrate = plt.subplot2grid((plot_rows, 2), (row, 1))
+	ax_gamma_mu_bitrate.set_xlabel(r'$\gamma$')
+	ax_gamma_mu_bitrate.set_ylabel(r'$\mu$ bitrate')
+	ax_gamma_mu_bitrate.scatter(gamma_session, mu_bitrate, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+	ax_gamma_mu_bitrate.axis([0, None, 0, None])
 
 	if export:
 		fig.set_size_inches(22,12)

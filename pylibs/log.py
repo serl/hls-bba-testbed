@@ -161,6 +161,7 @@ class VLCLog(Log):
 					evt.buffering = int(match.group(7)) == 1
 					evt.downloading_active = int(match.group(10)) == 1
 					evt.downloading_stream = int(match.group(8)) if evt.downloading_active else None
+					evt.downloading_bitrate = inst.streams[evt.downloading_stream] if evt.downloading_stream is not None else None
 					evt.downloading_segment = int(match.group(9)) if evt.downloading_active else None
 					evt.previous_bandwidth = int(match.group(11))
 					evt.avg_bandwidth = int(match.group(13)) if match.group(13) is not None else None
@@ -281,8 +282,11 @@ class VLCSession(Session):
 	def get_fairshare(self):
 		return max(self.bwprofile.values()) / len(self.clients)
 
-	def get_fraction_both_overestimating(self): #nossdav-akhshabi mu
+	def get_fraction_both_overestimating(self, what='avg_bandwidth'): #nossdav-akhshabi mu
 		if not hasattr(self, '_fraction_both_overestimating_cache'):
+			self._fraction_both_overestimating_cache = {}
+
+		if not self._fraction_both_overestimating_cache.has_key(what):
 			if len(self.VLClogs) != 2:
 				raise Exception('No sense in trying to measure gamma. Need exactly 2 clients.')
 			fairshare = self.get_fairshare()
@@ -291,13 +295,13 @@ class VLCSession(Session):
 			last_t = all_t[0]
 			last_activity = (False, False)
 			for t in all_t:
-				client0_bw = self.VLClogs[0].get_step_value_at(t, lambda evt: evt.avg_bandwidth)
+				client0_bw = self.VLClogs[0].get_step_value_at(t, lambda evt: evt.__dict__[what])
 				if client0_bw is None:
 					client0_overestimating = False
 				else:
 					client0_overestimating = client0_bw > fairshare
 
-				client1_bw = self.VLClogs[1].get_step_value_at(t, lambda evt: evt.avg_bandwidth)
+				client1_bw = self.VLClogs[1].get_step_value_at(t, lambda evt: evt.__dict__[what])
 				if client1_bw is None:
 					client1_overestimating = False
 				else:
@@ -310,9 +314,9 @@ class VLCSession(Session):
 				last_t = t
 				last_activity = current_activity
 
-			self._fraction_both_overestimating_cache = both_overestimating_time/self.duration
+			self._fraction_both_overestimating_cache[what] = both_overestimating_time/self.duration
 
-		return self._fraction_both_overestimating_cache
+		return self._fraction_both_overestimating_cache[what]
 
 	def get_fraction_both_on(self): #nossdav-akhshabi lambda
 		if not hasattr(self, '_fraction_both_on'):
