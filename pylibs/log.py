@@ -167,12 +167,11 @@ class VLCLog(Log):
 					evt.avg_bandwidth = int(match.group(13)) if match.group(13) is not None else None
 
 					evt.buffer_approx = None
-					if (not evt.downloading_active and not past_evt.downloading_active) or (past_evt is not None and past_evt.buffer < evt.buffer):
-						evt.buffer_approx = evt.buffer
-					last_buffer_size = evt.buffer
-
-					if past_evt is not None and ( (not past_evt.downloading_active and evt.downloading_active) or (past_evt.downloading_active and evt.downloading_active and past_evt.downloading_segment < evt.downloading_segment) ):
-						inst.http_requests.append(evt.t)
+					if past_evt is not None:
+						if (not evt.downloading_active and not past_evt.downloading_active) or past_evt.buffer < evt.buffer:
+							evt.buffer_approx = evt.buffer
+						if (not past_evt.downloading_active and evt.downloading_active) or (past_evt.downloading_active and evt.downloading_active and past_evt.downloading_segment < evt.downloading_segment):
+							inst.http_requests.append(evt.t)
 
 					#print line.strip()
 					#print evt.t, evt.playing_time, evt.buffer, evt.buffer_segments, evt.playing_stream, evt.playing_segment, evt.rebuffering, evt.downloading_stream, evt.downloading_segment, evt.downloading_active, evt.previous_bandwidth
