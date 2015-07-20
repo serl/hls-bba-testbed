@@ -215,6 +215,7 @@ class VLCSession(Session):
 		self.bandwidth_buffer = None
 		self.delay_buffer = None
 		self.name = ''
+		self.run = ''
 		self.collection = ''
 		self.max_display_bits = 0
 
@@ -369,6 +370,7 @@ class VLCSession(Session):
 		sched_file = os.path.join(dirname, 'jobs.sched')
 		if not os.path.isfile(sched_file):
 			sched_file = os.path.normpath(os.path.join(dirname, '..', 'jobs.sched'))
+			inst.run = dirname.rstrip(os.path.sep).split(os.path.sep)[-1]
 		session_re = re.compile('^#SESSION(.+)$')
 		with open(sched_file, "r") as contents:
 			for line in contents:

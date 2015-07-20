@@ -380,6 +380,8 @@ def plotScatters(sessions, export=False, thickness_factor=1):
 	plot_unfairness = False
 	plot_rows = 2 * (int(plot_instability) + int(plot_unfairness)) + 1
 
+	tag_session = []
+	tag_player = []
 	gamma_session = []
 	gamma_player = [] #the same, but dduupplliiccaattee
 	mu = []
@@ -392,6 +394,8 @@ def plotScatters(sessions, export=False, thickness_factor=1):
 	lambda_player = []
 	unfairness = []
 	for session in sessions:
+		tag = "{0}_{1}".format(session.name.split('_')[0], session.run)
+		tag_session.append(tag)
 		gamma = session.get_fraction_oneidle()
 		gamma_session.append(gamma)
 		mu.append(session.get_fraction_both_overestimating())
@@ -404,6 +408,7 @@ def plotScatters(sessions, export=False, thickness_factor=1):
 		if plot_unfairness:
 			unfairness.append(session.get_avg_unfairness()/1000)
 		for VLClog in session.VLClogs:
+			tag_player.append(tag)
 			gamma_player.append(gamma)
 			if plot_instability:
 				instability.append(VLClog.get_instability())
@@ -416,6 +421,8 @@ def plotScatters(sessions, export=False, thickness_factor=1):
 	ax_gamma_mu.set_xlabel(r'$\gamma$')
 	ax_gamma_mu.set_ylabel(r'$\mu$')
 	ax_gamma_mu.scatter(gamma_session, mu, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+	for i, tag in enumerate(tag_session):
+		ax_gamma_mu.annotate(tag, (gamma_session[i], mu[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 	ax_gamma_mu.axis([0, None, 0, None])
 
 	if plot_instability:
@@ -423,6 +430,8 @@ def plotScatters(sessions, export=False, thickness_factor=1):
 		ax_gamma_inst.set_xlabel(r'$\gamma$')
 		ax_gamma_inst.set_ylabel('instability (%)')
 		ax_gamma_inst.scatter(gamma_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=plt.get_cmap('cool'))
+		for i, tag in enumerate(tag_player):
+			ax_gamma_inst.annotate(tag, (gamma_player[i], instability[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_gamma_inst.axis([0, None, 0, None])
 		row += 1
 
@@ -432,12 +441,16 @@ def plotScatters(sessions, export=False, thickness_factor=1):
 		ax_fairshare_inst.scatter(fairshare_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=plt.get_cmap('cool'))
 		for s in sessions[0].streams:
 			ax_fairshare_inst.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
+		for i, tag in enumerate(tag_player):
+			ax_fairshare_inst.annotate(tag, (fairshare_player[i], instability[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_fairshare_inst.axis([0, None, 0, None])
 
 		ax_lambda_inst = plt.subplot2grid((plot_rows, 2), (row, 1))
 		ax_lambda_inst.set_xlabel(r'$\lambda$')
 		ax_lambda_inst.set_ylabel('instability (%)')
 		ax_lambda_inst.scatter(lambda_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=plt.get_cmap('cool'))
+		for i, tag in enumerate(tag_player):
+			ax_lambda_inst.annotate(tag, (lambda_player[i], instability[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_lambda_inst.axis([0, None, 0, None])
 		row += 1
 
@@ -468,12 +481,16 @@ def plotScatters(sessions, export=False, thickness_factor=1):
 	ax_gamma_mu_dry.set_xlabel(r'$\gamma$')
 	ax_gamma_mu_dry.set_ylabel(r'$\mu$ dry')
 	ax_gamma_mu_dry.scatter(gamma_session, mu_dry, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+	for i, tag in enumerate(tag_session):
+		ax_gamma_mu_dry.annotate(tag, (gamma_session[i], mu_dry[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 	ax_gamma_mu_dry.axis([0, None, 0, None])
 
 	ax_gamma_mu_bitrate = plt.subplot2grid((plot_rows, 2), (row, 1))
 	ax_gamma_mu_bitrate.set_xlabel(r'$\gamma$')
 	ax_gamma_mu_bitrate.set_ylabel(r'$\mu$ bitrate')
 	ax_gamma_mu_bitrate.scatter(gamma_session, mu_bitrate, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+	for i, tag in enumerate(tag_session):
+		ax_gamma_mu_bitrate.annotate(tag, (gamma_session[i], mu_bitrate[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 	ax_gamma_mu_bitrate.axis([0, None, 0, None])
 
 	if export:
