@@ -103,7 +103,7 @@ class KilledEvent(Event):
 	
 class Player(KilledEvent):
 	def killed_command(self):
-		return 'export HTTPLIVE_ALGORITHM=%s ; /vagrant/code/vlc/vlc -I "dummy" -V "dummy" -A "dummy" "%s" >$LOGDIR/%s_vlc.log' % (self.algo.upper(), self.url, self.host)
+		return 'export HTTPLIVE_ALGORITHM={0} ; /vagrant/code/vlc/vlc -I "dummy" -V "dummy" -A "dummy" "{1}" >$LOGDIR/{2}_vlc.log 2>$LOGDIR/{2}_vlc.err'.format(self.algo.upper(), self.url, self.host)
 	def add_test_infos(self, test):
 		test.clients.append({'delay': self.delay, 'host': self.host})
 
