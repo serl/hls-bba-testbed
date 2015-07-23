@@ -70,7 +70,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		ax_bits.step(vlc_t, stream_requests, where='post', color='green', label='stream requested', linewidth=thickness_factor)
 		#playout buffer
 		ax_buffer = ax_bits.twinx()
-		#ax_buffer.step(vlc_t, [evt.buffer for evt in vlc_events], where='post', color='blue', alpha=0.7, linewidth=thickness_factor)
+		#ax_buffer.step(vlc_t, [evt.buffer for evt in vlc_events], where='post', color='#000099', alpha=0.7, linewidth=thickness_factor)
 		ax_buffer.plot(vlc_approxbuffer_t, vlc_approxbuffer_v, color='blue', alpha=0.7, linewidth=thickness_factor)
 		ax_buffer.set_ylabel('buffer (s)', color='blue')
 		for tl in ax_buffer.get_yticklabels():
