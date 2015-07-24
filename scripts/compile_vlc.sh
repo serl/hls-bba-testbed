@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 apt-get -y build-dep vlc #we want the libraries, don't we?
+apt-get -y install libcurl4-openssl-dev
 
 cd /vagrant/code
 
