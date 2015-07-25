@@ -102,8 +102,9 @@ class KilledEvent(Event):
 		raise Exception('Unimplemented')
 	
 class Player(KilledEvent):
+	curl=False
 	def killed_command(self):
-		return 'export HTTPLIVE_ALGORITHM={0} ; /vagrant/code/vlc/vlc -I "dummy" -V "dummy" -A "dummy" "{1}" >$LOGDIR/{2}_vlc.log 2>$LOGDIR/{2}_vlc.err'.format(self.algo.upper(), self.url, self.host)
+		return 'export HTTPLIVE_ALGORITHM={0} HTTPLIVE_CURL={3} ; /vagrant/code/vlc/vlc -I "dummy" -V "dummy" -A "dummy" "{1}" >$LOGDIR/{2}_vlc.log 2>$LOGDIR/{2}_vlc.err'.format(self.algo.upper(), self.url, self.host, 'yes' if self.curl else 'no')
 	def add_test_infos(self, test):
 		test.clients.append({'delay': self.delay, 'host': self.host})
 
