@@ -40,6 +40,10 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 	subplot_rows = len(session.VLClogs)*3+1 if details else len(session.VLClogs)*2
 	if len(session.VLClogs) == 2:
 		subplot_rows += 1
+	if details:
+		for VLClog in session.VLClogs:
+			if VLClog.algorithm.startswith('bba1'):
+				subplot_rows += 2
 
 	for VLClog in session.VLClogs:
 		ax_bits = plt.subplot2grid((subplot_rows, 1), (i, 0), rowspan=2, sharex=ax_bits)
@@ -63,7 +67,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			ax_bits.axvline(buffering.t - session.start_time, alpha=0.8, linewidth=3*thickness_factor, color='red')
 		#measured bandwidth
 		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', label='obtained bw', linewidth=thickness_factor)
-		if vlc_events[0].avg_bandwidth is not None:
+		if vlc_events[0].avg_bandwidth is not None and max([evt.avg_bandwidth for evt in vlc_events]) != 0:
 			ax_bits.step(vlc_t, [evt.avg_bandwidth for evt in vlc_events], where='post', color='#441e00', alpha=0.7, label='avg bw', linewidth=thickness_factor)
 		#stream requested
 		stream_requests = [VLClog.streams[evt.downloading_stream] if evt.downloading_stream is not None else None for evt in vlc_events]
@@ -83,8 +87,8 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		ax_buffer.axis([plot_start, plot_end, 0, None])
 
 		if details:
-			#avg bitrate
-			ax_buffer.text(plot_end*.99, 5, 'avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s, instability: {2:.1f}%'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000, VLClog.get_instability()), weight='semibold', ha='right')
+			#avg bw, bitrate and instability
+			ax_buffer.text(.99, .01, 'avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s, instability: {2:.1f}%'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000, VLClog.get_instability()), transform=ax_buffer.transAxes, weight='semibold', ha='right')
 
 		if i == 0:
 			handles, labels = ax_bits.get_legend_handles_labels()
@@ -96,6 +100,54 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		i += 2
 
 		if details:
+			if VLClog.algorithm.startswith('bba1'):
+				#bba1 subplot
+				ax_bba1bits = plt.subplot2grid((subplot_rows, 1), (i, 0), rowspan=2, sharex=ax_bits)
+				ax_bba1bits.set_ylabel('(kbit/s)')
+
+				for stream in session.streams:
+					ax_bba1bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
+				if len(session.bwprofile):
+					bwprofile = sorted(session.bwprofile.iteritems())
+					bwprofile.append((plot_end, bwprofile[-1][1]))
+					bwprofile_t = [t for t, v in bwprofile]
+					bwprofile_v = [v for t, v in bwprofile]
+					bwprofile_v = [bwprofile_v[0]] + bwprofile_v[:-1]
+					ax_bba1bits.step(bwprofile_t, bwprofile_v, marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bw limit')
+
+				#selected stream and rates
+				vlc_bba1rates_t = []
+				vlc_bba1rates_v = []
+				vlc_bba1stream_v = []
+				for vlc_evt_i, t in enumerate(vlc_t):
+					evt = vlc_events[vlc_evt_i]
+					if not hasattr(evt, 'bba1_rates') or evt.bba1_rates is None:
+						continue
+					vlc_bba1rates_t.append(t)
+					vlc_bba1rates_v.append(evt.bba1_rates)
+					vlc_bba1stream_v.append(evt.bba1_rates[evt.bba1_stream])
+
+				for r_id, _ in enumerate(vlc_bba1rates_v[0]):
+					inst_rates = [rates[r_id] for rates in vlc_bba1rates_v]
+					ax_bba1bits.step(vlc_bba1rates_t, inst_rates, where='post', color='black', linewidth=thickness_factor)
+				ax_bba1bits.step(vlc_bba1rates_t, vlc_bba1stream_v, where='post', color='green', linewidth=thickness_factor)
+
+				ax_bba1bits.axis([plot_start, plot_end, 0, None])
+				locs = ax_bba1bits.get_yticks()
+				ax_bba1bits.set_yticklabels(map("{0:.0f}".format, locs/1000))
+
+				#reservoir and buffer
+				ax_bba1buffer = ax_bba1bits.twinx()
+				ax_bba1buffer.step(vlc_t, [evt.buffer for evt in vlc_events], where='post', color='blue', linewidth=thickness_factor)
+				vlc_bba1reservoir_t, vlc_bba1reservoir_v = VLClog.get_events(time_relative_to=session, values_fn=lambda evt: evt.bba1_reservoir, filter_fn=lambda evt: hasattr(evt, 'bba1_reservoir'))
+				ax_bba1buffer.step(vlc_bba1reservoir_t, vlc_bba1reservoir_v, where='post', color='blue', linestyle='--', linewidth=thickness_factor)
+				ax_bba1buffer.set_ylabel('buffer (s)', color='blue')
+				for tl in ax_bba1buffer.get_yticklabels():
+					tl.set_color('blue')
+				ax_bba1buffer.axis([plot_start, plot_end, 0, None])
+
+				i += 2
+
 			#cwnd subplot
 			ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
 			ax_packets.set_ylabel('(pkts)')
