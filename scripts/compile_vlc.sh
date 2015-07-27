@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 
-apt-get -y build-dep vlc #we want the libraries, don't we?
-apt-get -y install libcurl4-openssl-dev
+sudo apt-get -y build-dep vlc #we want the libraries, don't we?
+sudo apt-get -y install libcurl4-gnutls-dev git libtool build-essential pkg-config autoconf
 
 cd /vagrant/code
+
+if [ "$1" == "update" ]; then
+  cd vlc && make -j2
+  exit $?
+fi
 
 if [ -e vlc/vlc ]; then
   exit 0
@@ -14,8 +19,6 @@ if [ ! -d vlc ]; then
   exit 1
 fi
 cd vlc
-
-apt-get -y install git libtool build-essential pkg-config autoconf
 
 git submodule init && git submodule update
 
