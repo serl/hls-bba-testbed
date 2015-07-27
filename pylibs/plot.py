@@ -370,7 +370,7 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 
 	plt.close()
 
-def plotScatters(sessions, export=False, thickness_factor=1):
+def plotScatters(sessions, export=False, export_big=False, thickness_factor=1):
 	if export:
 		import matplotlib
 		matplotlib.use('Agg')
@@ -496,6 +496,9 @@ def plotScatters(sessions, export=False, thickness_factor=1):
 	if export:
 		fig.set_size_inches(22,12)
 		fig.savefig(export, bbox_inches='tight')
+		if export_big:
+			fig.set_size_inches(88,48)
+			fig.savefig(export_big, bbox_inches='tight')
 	else:
 		plt.show()
 

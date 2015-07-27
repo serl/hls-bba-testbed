@@ -7,8 +7,10 @@ if __name__ == "__main__":
 	filenames = sys.argv[1:]
 	assert len(filenames)
 	export = False
+	export_big = False
 	if filenames[0].endswith('.png'):
 		export = filenames[0]
+		export_big = filenames[0].replace('.png', '_big.png')
 		filenames = sys.argv[2:]
 
 	sessions = []
@@ -32,5 +34,5 @@ if __name__ == "__main__":
 			sessions.append(session)
 
 	print "Plotting..."
-	plotScatters(sessions, export, thickness_factor=2)
+	plotScatters(sessions, export, export_big=export_big, thickness_factor=2)
 
