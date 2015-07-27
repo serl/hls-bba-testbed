@@ -145,6 +145,7 @@ class VLCLog(Log):
 		streams_re = re.compile('^STREAMS: ([\d\s]*)$')
 		composition_re = re.compile('^DOWNLOAD COMPOSITION: (\d*)$')
 		event_re = re.compile('^T: ([\d\.]+), PLAYING TIME: (-?\d+)ms, BUFFER: (-?\d+)s \((-?\d+)\), PLAY STR/SEG \(buffering\): (\d+)/(\d+) \((\d+)\), DOWNLOAD STR/SEG \(active\): (\d+)/(\d+) \((\d+)\), BANDWIDTH: (\d+)(, AVG BANDWIDTH: (\d+))?$')
+		bba1_re = re.compile('BBA1_debug. reservoir: (\d+)s, selected_stream: (\d+), instant rates: ([\d\s]+)')
 		past_evt = None
 		with open(filename, "r") as contents:
 			for line in contents:
@@ -177,6 +178,17 @@ class VLCLog(Log):
 					#print evt.t, evt.playing_time, evt.buffer, evt.buffer_segments, evt.playing_stream, evt.playing_segment, evt.rebuffering, evt.downloading_stream, evt.downloading_segment, evt.downloading_active, evt.previous_bandwidth
 					inst.events[evt.t] = evt
 					past_evt = evt
+					continue
+
+				#bba1 debug line
+				match = bba1_re.match(line)
+				if match:
+					if past_evt is not None:
+						past_evt.bba1_reservoir = int(match.group(1))
+						past_evt.bba1_stream = int(match.group(2))
+						past_evt.bba1_rates = tuple(map(int, match.group(3).split(" ")))
+						if all(r == 0 for r in past_evt.bba1_rates):
+							past_evt.bba1_rates = None
 					continue
 
 				#download composition line
