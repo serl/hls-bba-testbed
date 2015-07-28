@@ -28,7 +28,7 @@ if __name__ == "__main__":
 	algorithms = ('classic-13', 'bba0')
 	bandwidths = ('800kbit', '1000kbit', '1200kbit', '1400kbit', '1600kbit', '1800kbit', '2000kbit', '2200kbit', '2400kbit', '2600kbit', '2800kbit', '3000kbit', '3200kbit', '3400kbit', '3600kbit', '3800kbit', '4000kbit', '4200kbit', '4400kbit', '4600kbit', '4800kbit', '5000kbit', '5200kbit', '5400kbit', '5600kbit', '5800kbit', '6000kbit')
 	collection = 'constant_two_con_bbb8_{0}_{1}p'.format(delay, buffer_size)
-	for curl in (True):
+	for curl in (True, ):
 		for algo in algorithms:
 			player1 = Player(delay=1, host='client0', algo=algo, curl=curl, url=bigbuckbunny8_url, kill_after=700)
 			player2 = Player(delay=1, host='client1', algo=algo, curl=curl, url=bigbuckbunny8_url, kill_after=700)
