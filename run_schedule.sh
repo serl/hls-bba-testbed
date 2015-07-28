@@ -1,6 +1,10 @@
 #!/bin/bash
 
-source code/colors.sh
+pushd `dirname $0` > /dev/null
+SCRIPTPATH=`pwd`
+popd > /dev/null
+
+source "$SCRIPTPATH/code/colors.sh"
 
 repeat=1
 dry_run="false"
@@ -49,6 +53,11 @@ for schedule_file in "$@"; do
 		let repetition+=1
 	done
 done
+
+mailaddress="$(cat "$SCRIPTPATH/.mail" 2>/dev/null)"
+if [ "$mailaddress" ]; then
+	echo "" | mail -s "Tests ran on $SCRIPTPATH" "$mailaddress"
+fi
 
 if [ "$dry_run" == "false" ]; then
 	vagrant halt
