@@ -7,65 +7,71 @@ tearsofsteel_url = server_url + '/ts/vM7nH0Kl_size.m3u8' # rates: 380000 670000 
 bigbuckbunny_url = server_url + '/bbb/bigbuckbunny_size.m3u8' # rates: 290400 510400 1170400 2820400, duration (s): ~597
 bigbuckbunny8_url = server_url + '/bbb8/play_size.m3u8' # rates: 350k 470k 630k 845k 1130k 1520k 2040k 2750k, duration (s): ~600
 
+def curl_signature(curl):
+	if curl == 'yes':
+		return 'keepalive'
+	if curl == 'bandwidth':
+		return 'keepalive_est'
+	return 'close'
 
 if __name__ == "__main__":
 	delay = '200ms'
 	buffer_size = 200
 
-	algorithms = ('classic-13', 'bba0')
+	algorithms = ('classic-13', 'bba0', 'bba1')
 	bandwidths = ('400kbit', '500kbit', '600kbit', '700kbit', '800kbit', '900kbit', '1000kbit', '1100kbit', '1200kbit', '1300kbit', '1400kbit', '1500kbit', '1600kbit', '1700kbit', '1800kbit', '1900kbit', '2000kbit', '2100kbit', '2200kbit', '2300kbit', '2400kbit', '2500kbit', '2600kbit', '2700kbit', '2800kbit', '2900kbit', '3000kbit')
 	collection = 'constant_single_bbb8_{0}_{1}p'.format(delay, buffer_size)
-	for curl in (False, True):
+	for curl in ('no', 'yes', 'bandwidth'):
 		for algo in algorithms:
 			player = Player(delay=1, host='client0', algo=algo, curl=curl, url=bigbuckbunny8_url, kill_after=700)
 			num = 1
 			for bw in bandwidths:
 				bwchange = BwChange(bw=bw, buffer_size=buffer_size)
-				t = Test(name='c{0:02d}_single_bbb8_{1}_{2}_{3}'.format(num, bw, algo, 'keepalive' if curl else 'close'), collection=collection, player=player, init_bw=bwchange, packet_delay=delay)
+				t = Test(name='c{0:02d}_single_bbb8_{1}_{2}_{3}'.format(num, bw, algo, curl_signature(curl)), collection=collection, player=player, init_bw=bwchange, packet_delay=delay)
 				t.generate_schedule()
 				num += 1
 
 	algorithms = ('classic-13', 'bba0')
 	bandwidths = ('800kbit', '1000kbit', '1200kbit', '1400kbit', '1600kbit', '1800kbit', '2000kbit', '2200kbit', '2400kbit', '2600kbit', '2800kbit', '3000kbit', '3200kbit', '3400kbit', '3600kbit', '3800kbit', '4000kbit', '4200kbit', '4400kbit', '4600kbit', '4800kbit', '5000kbit', '5200kbit', '5400kbit', '5600kbit', '5800kbit', '6000kbit')
 	collection = 'constant_two_con_bbb8_{0}_{1}p'.format(delay, buffer_size)
-	for curl in (True, ):
+	for curl in ('yes', 'bandwidth'):
 		for algo in algorithms:
 			player1 = Player(delay=1, host='client0', algo=algo, curl=curl, url=bigbuckbunny8_url, kill_after=700)
 			player2 = Player(delay=1, host='client1', algo=algo, curl=curl, url=bigbuckbunny8_url, kill_after=700)
 			num = 1
 			for bw in bandwidths:
 				bwchange = BwChange(bw=bw, buffer_size=buffer_size)
-				t = Test(name='c{0:02d}_two_con_bbb8_{1}_{2}_{3}'.format(num, bw, algo, 'keepalive' if curl else 'close'), collection=collection, init_bw=bwchange, packet_delay=delay)
+				t = Test(name='c{0:02d}_two_con_bbb8_{1}_{2}_{3}'.format(num, bw, algo, curl_signature(curl)), collection=collection, init_bw=bwchange, packet_delay=delay)
 				t.add_event(player1)
 				t.add_event(player2)
 				t.generate_schedule()
 				num += 1
 
 
-	algorithms = ('classic-2', 'bba0')
+	algorithms = ('classic-2', 'bba0', 'bba1')
 	bandwidths = ('300kbit', '400kbit', '500kbit', '600kbit', '700kbit', '800kbit', '900kbit', '1000kbit', '1100kbit', '1200kbit', '1300kbit', '1400kbit', '1500kbit', '1600kbit', '1700kbit', '1800kbit', '1900kbit', '2000kbit', '2100kbit', '2200kbit')
 	collection = 'constant_single_bipbop_{0}_{1}p'.format(delay, buffer_size)
-	for curl in (False, True):
+	for curl in ('no', 'yes'):
 		for algo in algorithms:
 			player = Player(delay=1, host='client0', algo=algo, curl=curl, url=bipbop_url, kill_after=2000)
 			num = 1
 			for bw in bandwidths:
 				bwchange = BwChange(bw=bw, buffer_size=buffer_size)
-				t = Test(name='c{0:02d}_bipbop_{1}_{2}_{3}'.format(num, bw, algo, 'keepalive' if curl else 'close'), collection=collection, player=player, init_bw=bwchange, packet_delay=delay)
+				t = Test(name='c{0:02d}_bipbop_{1}_{2}_{3}'.format(num, bw, algo, curl_signature(curl)), collection=collection, player=player, init_bw=bwchange, packet_delay=delay)
 				t.generate_schedule()
 				num += 1
 
 	algorithms = ('classic-2', 'bba0')
 	bandwidths = ('600kbit', '800kbit', '1000kbit', '1200kbit', '1400kbit', '1600kbit', '1800kbit', '2000kbit', '2200kbit', '2400kbit', '2600kbit', '2800kbit', '3000kbit', '3200kbit', '3400kbit', '3600kbit', '3800kbit', '4000kbit', '4200kbit', '4400kbit')
 	collection = 'constant_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
-	for curl in (False, True):
+	for curl in ('no', 'yes'):
 		for algo in algorithms:
 			player1 = Player(delay=1, host='client0', algo=algo, curl=curl, url=bipbop_url, kill_after=2000)
 			player2 = Player(delay=1, host='client1', algo=algo, curl=curl, url=bipbop_url, kill_after=2000)
 			num = 1
 			for bw in bandwidths:
 				bwchange = BwChange(bw=bw, buffer_size=buffer_size)
-				t = Test(name='c{0:02d}_two_con_bipbop_{1}_{2}_{3}'.format(num, bw, algo, 'keepalive' if curl else 'close'), collection=collection, init_bw=bwchange, packet_delay=delay)
+				t = Test(name='c{0:02d}_two_con_bipbop_{1}_{2}_{3}'.format(num, bw, algo, curl_signature(curl)), collection=collection, init_bw=bwchange, packet_delay=delay)
 				t.add_event(player1)
 				t.add_event(player2)
 				t.generate_schedule()
