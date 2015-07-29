@@ -64,7 +64,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
 		vlc_approxbuffer_t, vlc_approxbuffer_v = VLClog.get_events(time_relative_to=session, values_fn=lambda evt: evt.buffer_approx, filter_fn=lambda evt: evt.buffer_approx is not None)
 		for buffering in [e for e in vlc_events if e.buffering][1:]:
-			ax_bits.axvline(buffering.t - session.start_time, alpha=0.8, linewidth=3*thickness_factor, color='red')
+			ax_bits.axvspan(buffering.t - session.start_time, buffering.end - session.start_time, alpha=0.8, linewidth=3*thickness_factor, color='red')
 		#measured bandwidth
 		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', label='obtained bw', linewidth=thickness_factor)
 		if vlc_events[0].avg_bandwidth is not None and max([evt.avg_bandwidth for evt in vlc_events]) != 0:
@@ -118,6 +118,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				#selected stream and rates
 				vlc_bba1rates_t = []
 				vlc_bba1rates_v = []
+				vlc_bba1calcrate_v = []
 				vlc_bba1stream_v = []
 				for vlc_evt_i, t in enumerate(vlc_t):
 					evt = vlc_events[vlc_evt_i]
@@ -125,11 +126,13 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 						continue
 					vlc_bba1rates_t.append(t)
 					vlc_bba1rates_v.append(evt.bba1_rates)
+					vlc_bba1calcrate_v.append(evt.bba1_calcrate)
 					vlc_bba1stream_v.append(evt.bba1_rates[evt.bba1_stream])
 
 				for r_id, _ in enumerate(vlc_bba1rates_v[0]):
 					inst_rates = [rates[r_id] for rates in vlc_bba1rates_v]
 					ax_bba1bits.step(vlc_bba1rates_t, inst_rates, where='post', color='black', linewidth=thickness_factor)
+				ax_bba1bits.step(vlc_bba1rates_t, vlc_bba1calcrate_v, where='post', color='red', linewidth=thickness_factor)
 				ax_bba1bits.step(vlc_bba1rates_t, vlc_bba1stream_v, where='post', color='green', linewidth=thickness_factor)
 
 				ax_bba1bits.axis([plot_start, plot_end, 0, None])
