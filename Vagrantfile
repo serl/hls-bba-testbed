@@ -26,6 +26,7 @@ Vagrant.configure(2) do |config|
     vb.customize ["modifyvm", :id, "--ioapic", "on"]
   end
   config.vm.provision :shell, path: "scripts/bootstrap.sh"
+  config.vm.provision :shell, path: "scripts/disable_authlog.sh"
   config.vm.provision :shell, inline: "ntpdate pool.ntp.org", run: "always"
   (0..2).each do |i|
     config.vm.provision :shell, inline: "ethtool -K eth#{i} tx off gso off sg off gro off || echo no eth#{i} here!", run: "always"
