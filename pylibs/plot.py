@@ -64,7 +64,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
 		vlc_approxbuffer_t, vlc_approxbuffer_v = VLClog.get_events(time_relative_to=session, values_fn=lambda evt: evt.buffer_approx, filter_fn=lambda evt: evt.buffer_approx is not None)
 		for buffering in [e for e in vlc_events if e.buffering][1:]:
-			ax_bits.axvspan(buffering.t - session.start_time, buffering.end - session.start_time, alpha=0.8, linewidth=3*thickness_factor, color='red')
+			ax_bits.axvspan(buffering.t - session.start_time, buffering.end - session.start_time, alpha=0.8, linewidth=0, color='red')
 		#measured bandwidth
 		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', label='obtained bw', linewidth=thickness_factor)
 		if vlc_events[0].avg_bandwidth is not None and max([evt.avg_bandwidth for evt in vlc_events]) != 0:
@@ -154,17 +154,44 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			#cwnd subplot
 			ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
 			ax_packets.set_ylabel('(pkts)')
+			ax_bytes = ax_packets.twinx()
 
+			#tcpprobe
 			for fourtuple, tcpp in VLClog.tcpprobe.split().iteritems():
 				tcpp_t, tcpp_events = tcpp.get_events(time_relative_to=session)
-				#tcpprobe
 				cwnd = [evt.snd_cwnd for evt in tcpp_events]
 				ax_packets.step(tcpp_t, cwnd, where='post', color='red', label='cwnd', linewidth=thickness_factor)
 				ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
 				ax_packets.step(tcpp_t, ssthresh, where='post', color='gray', label='ssthresh', linewidth=thickness_factor)
+				inflight = [evt.inflight for evt in tcpp_events]
+				ax_bytes.step(tcpp_t, inflight, where='post', color='green', label='in flight', linewidth=thickness_factor)
+
+				sends = []
+				cur_send = []
+				for evt in tcpp_events:
+					if len(cur_send) == 0: #look for beginning
+						if evt.sending:
+							cur_send.append(evt.t)
+					elif len(cur_send) == 1: #look for end
+						if not evt.sending:
+							cur_send.append(evt.t)
+							sends.append(cur_send)
+							cur_send = []
+					else:
+						raise Exception('wat?')
+				for send in sends:
+					ax_bytes.axvspan(send[0] - session.start_time, send[1] - session.start_time, alpha=0.2, linewidth=0, color='purple')
 
 			for req_time in VLClog.http_requests:
 				ax_packets.axvline(req_time - session.start_time, alpha=0.8, linestyle=':', linewidth=thickness_factor, color='black')
+
+			ax_bytes.set_ylabel('in flight (kB)', color='green')
+			locs = ax_bytes.get_yticks()
+			ax_bytes.set_yticklabels(map("{0:.0f}".format, locs/1000))
+			for tl in ax_bytes.get_yticklabels():
+				tl.set_color('green')
+			ax_bytes.axis([plot_start, plot_end, 0, None])
+
 
 			i += 1
 

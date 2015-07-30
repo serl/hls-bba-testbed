@@ -467,6 +467,7 @@ class TcpProbeLog(Log):
 		ip4_re = re.compile('^\[::ffff:([\.\d]+)\]$')
 		start_time = None
 		hz_value = 1
+		past_evt = None
 		with open(filename, "r") as contents:
 			for line in contents:
 				match = boot_re.match(line)
@@ -486,14 +487,19 @@ class TcpProbeLog(Log):
 					evt.dst = match_ip4.group(1) if match_ip4 else match.group(4)
 					evt.dst_port = int(match.group(5))
 					evt.packet_len = int(match.group(6))
-					evt.next_seq = match.group(7)
-					evt.unack_seq = match.group(8)
+					evt.next_seq = int(match.group(7), 16)
+					evt.unack_seq = int(match.group(8), 16)
+					evt.inflight = evt.next_seq - evt.unack_seq
 					evt.snd_cwnd = int(match.group(9))
 					evt.ssthresh = int(match.group(10))
 					evt.snd_wnd = int(match.group(11))
 					evt.srtt = int(match.group(12))*1000/hz_value
 					evt.rcv_wnd = int(match.group(13))
+					evt.sending = True
+					if past_evt is not None:
+						evt.sending = past_evt.next_seq != evt.next_seq
 					inst.events[evt.t] = evt
+					past_evt = evt
 					continue
 
 		inst.adjust_time()
