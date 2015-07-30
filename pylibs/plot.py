@@ -167,18 +167,15 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				ax_bytes.step(tcpp_t, inflight, where='post', color='green', label='in flight', linewidth=thickness_factor)
 
 				sends = []
-				cur_send = []
+				cur_send_start = None
 				for evt in tcpp_events:
-					if len(cur_send) == 0: #look for beginning
+					if cur_send_start is None: #look for beginning
 						if evt.sending:
-							cur_send.append(evt.t)
-					elif len(cur_send) == 1: #look for end
+							cur_send_start = evt.t
+					else: #look for end
 						if not evt.sending:
-							cur_send.append(evt.t)
-							sends.append(cur_send)
-							cur_send = []
-					else:
-						raise Exception('wat?')
+							sends.append((cur_send_start, evt.t))
+							cur_send_start = None
 				for send in sends:
 					ax_bytes.axvspan(send[0] - session.start_time, send[1] - session.start_time, alpha=0.2, linewidth=0, color='purple')
 
