@@ -127,7 +127,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 					vlc_bba1rates_t.append(t)
 					vlc_bba1rates_v.append(evt.bba1_rates)
 					vlc_bba1calcrate_v.append(evt.bba1_calcrate)
-					vlc_bba1stream_v.append(evt.bba1_rates[evt.bba1_stream])
+					vlc_bba1stream_v.append(evt.bba1_rates[evt.bba1_stream] if evt.bba1_stream is not None else None)
 
 				for r_id, _ in enumerate(vlc_bba1rates_v[0]):
 					inst_rates = [rates[r_id] for rates in vlc_bba1rates_v]
