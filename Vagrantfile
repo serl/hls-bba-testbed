@@ -25,7 +25,6 @@ Vagrant.configure(2) do |config|
   config.vm.provider "virtualbox" do |vb|
     vb.customize ["modifyvm", :id, "--ioapic", "on"]
   end
-  config.vm.provision :shell, path: "scripts/bootstrap.sh"
   config.vm.provision :shell, path: "scripts/disable_authlog.sh"
   config.vm.provision :shell, inline: "ntpdate pool.ntp.org", run: "always"
   (0..2).each do |i|
@@ -87,6 +86,7 @@ Vagrant.configure(2) do |config|
       router.vm.provision :shell, inline: "sysctl -w net.ipv4.ip_forward=1", run: "always"
       router.vm.provision :shell, inline: "echo #{server_ip} server >> /etc/hosts"
       router.vm.provision :shell, inline: "cat /vagrant/scripts/ssh/id_rsa.pub >> ~/.ssh/authorized_keys", privileged: false
+      router.vm.provision :shell, path: "scripts/bootstrap.sh" #otherwise it will fill because of sudo in tc_helper (to monitor the buffer size)
     end
     net_id += 1
   end
