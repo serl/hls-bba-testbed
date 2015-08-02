@@ -116,6 +116,11 @@ class RouterBufferLogger(KilledEvent):
 	def killed_command(self):
 		return '/vagrant/code/tc_helper.sh watch_buffer_size &>$LOGDIR/{0}_buffer.log'.format(self.host)
 
+class TcpDump(KilledEvent):
+	snaplen=96
+	def killed_command(self):
+		return 'sudo tcpdump -tt -v -i{1} -s{2} -w $LOGDIR/dump_{0}_{1}.pcap &>$LOGDIR/dump_{0}_{1}.log'.format(self.host, self.iface, self.snaplen)
+
 class BwChange(Event):
 	buffer_size=200
 	host='bandwidth'
