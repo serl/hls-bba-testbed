@@ -154,7 +154,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			#cwnd subplot
 			ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
 			ax_packets.set_ylabel('(pkts)')
-			ax_bytes = ax_packets.twinx()
+			#ax_bytes = ax_packets.twinx()
 
 			#tcpprobe
 			for fourtuple, tcpp in VLClog.tcpprobe.split().iteritems():
@@ -163,32 +163,31 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				ax_packets.step(tcpp_t, cwnd, where='post', color='red', label='cwnd', linewidth=thickness_factor)
 				ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
 				ax_packets.step(tcpp_t, ssthresh, where='post', color='gray', label='ssthresh', linewidth=thickness_factor)
-				inflight = [evt.inflight for evt in tcpp_events]
-				ax_bytes.step(tcpp_t, inflight, where='post', color='green', label='in flight', linewidth=thickness_factor)
+				#inflight = [evt.inflight for evt in tcpp_events]
+				#ax_bytes.step(tcpp_t, inflight, where='post', color='green', label='in flight', linewidth=thickness_factor)
 
-				sends = []
-				cur_send_start = None
-				for evt in tcpp_events:
-					if cur_send_start is None: #look for beginning
-						if evt.sending:
-							cur_send_start = evt.t
-					else: #look for end
-						if not evt.sending:
-							sends.append((cur_send_start, evt.t))
-							cur_send_start = None
-				for send in sends:
-					ax_bytes.axvspan(send[0] - session.start_time, send[1] - session.start_time, alpha=0.2, linewidth=0, color='purple')
+				#sends = []
+				#cur_send_start = None
+				#for evt in tcpp_events:
+				#	if cur_send_start is None: #look for beginning
+				#		if evt.sending:
+				#			cur_send_start = evt.t
+				#	else: #look for end
+				#		if not evt.sending:
+				#			sends.append((cur_send_start, evt.t))
+				#			cur_send_start = None
+				#for send in sends:
+				#	ax_bytes.axvspan(send[0] - session.start_time, send[1] - session.start_time, alpha=0.2, linewidth=0, color='purple')
 
 			for req_time in VLClog.http_requests:
 				ax_packets.axvline(req_time - session.start_time, alpha=0.8, linestyle=':', linewidth=thickness_factor, color='black')
 
-			ax_bytes.set_ylabel('in flight (kB)', color='green')
-			locs = ax_bytes.get_yticks()
-			ax_bytes.set_yticklabels(map("{0:.0f}".format, locs/1000))
-			for tl in ax_bytes.get_yticklabels():
-				tl.set_color('green')
-			ax_bytes.axis([plot_start, plot_end, 0, None])
-
+			#ax_bytes.set_ylabel('in flight (kB)', color='green')
+			#locs = ax_bytes.get_yticks()
+			#ax_bytes.set_yticklabels(map("{0:.0f}".format, locs/1000))
+			#for tl in ax_bytes.get_yticklabels():
+			#	tl.set_color('green')
+			#ax_bytes.axis([plot_start, plot_end, 0, None])
 
 			i += 1
 
@@ -203,6 +202,35 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		ax_packets.axis([plot_start, plot_end, 0, max(bandwidth_buffer_packets)*1.1])
 		#handles, labels = ax_packets.get_legend_handles_labels()
 		#ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
+
+		try:
+			bandwidth_toclients_eth1_t, bandwidth_toclients_eth1_packets = session.bandwidth_eth1_toclients.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
+			#bandwidth_toclients_eth2_t, bandwidth_toclients_eth2_packets = session.bandwidth_eth2_toclients.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
+
+			#ax_flowingpackets = ax_packets.twinx()
+			#ax_flowingpackets.step(bandwidth_toclients_eth1_t, bandwidth_toclients_eth1_packets, where='mid', color='red', alpha=0.5, linewidth=thickness_factor)
+			#ax_flowingpackets.step(bandwidth_toclients_eth2_t, bandwidth_toclients_eth2_packets, where='mid', color='green', alpha=0.5, linewidth=thickness_factor)
+			#ax_flowingpackets.axis([plot_start, plot_end, 0, None])
+
+			max_packets = max(bandwidth_toclients_eth1_packets)
+			burst_start_idx = None
+			bursts = []
+			for idx, packets in enumerate(bandwidth_toclients_eth1_packets):
+				time = bandwidth_toclients_eth1_t[idx]
+				if burst_start_idx is not None:
+					if packets != bandwidth_toclients_eth1_packets[burst_start_idx]:
+						bursts.append((bandwidth_toclients_eth1_t[burst_start_idx]-0.005, bandwidth_toclients_eth1_t[idx-1]+0.005, bandwidth_toclients_eth1_packets[burst_start_idx]))
+						burst_start_idx = None
+						if packets > 0:
+							burst_start_idx = idx
+				elif packets > 0:
+					burst_start_idx = idx
+
+			for burst in bursts:
+				ax_packets.axvspan(burst[0], burst[1], alpha=0.2+0.8*burst[2]/max_packets, linewidth=0, color='red')
+
+		except:
+			pass
 
 		i += 1
 

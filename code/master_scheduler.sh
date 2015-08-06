@@ -32,6 +32,7 @@ for host in $hosts; do
 	echo "$schedule" | $ssh $host "/vagrant/code/scheduler.sh $start_time $logdir" &
 done
 
-sleep $(($duration + $master_delay + 2))
+wait
+RUN_PATH="$logdir" /vagrant/code/run_dir.sh /vagrant/code/post_run.d
 rmdir "$lockdir" &>/dev/null || echo -e "${Red}Unclean exit!$Color_Off"
 

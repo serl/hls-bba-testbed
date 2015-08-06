@@ -380,6 +380,10 @@ class VLCSession(Session):
 		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(dirname, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
 		for h in ('bandwidth', 'delay'):
 			funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(dirname, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
+			for iface in ('eth1', 'eth2'):
+				toclients_file = os.path.join(dirname, 'dump_'+h+'_'+iface+'.pcap.toclients')
+				if os.path.isfile(toclients_file):
+					funcs.append({'fn': TsharkPacketsToClients.parse, 'args': (toclients_file,), 'return_attr': h+'_'+iface+'_toclients'})
 
 		Parallelize(funcs, return_obj=inst).run()
 		inst.add_log(inst.tcpprobe)
@@ -524,6 +528,55 @@ class RouterBufferLog(Log):
 					evt.packets = int(match.group(3))
 					evt.requeues = int(match.group(4))
 					inst.events[evt.t] = evt
+					continue
+		inst.adjust_time()
+		return inst
+
+class TsharkPacketsToClients(Log):
+	@classmethod
+	def parse(cls, filename):
+		inst = cls()
+		line_re = re.compile('^([\d\.]+),([\d\.]+),(\d+),([\d\.]+),(\d+),(\d+)$')
+		with open(filename, "r") as contents:
+			for line in contents:
+				match = line_re.match(line)
+				if match:
+					rounded_time = round(float(match.group(1)), 2)
+					evt = None
+					try:
+						evt = inst.events[rounded_time]
+					except:
+						evt = LogEvent()
+						evt.t = rounded_time
+						evt.packets = 0
+						evt.bytes = 0
+						inst.events[evt.t] = evt
+					evt.packets += 1
+					evt.bytes += int(match.group(6))
+
+					#make sure the plot will have zeros where needed!
+					if rounded_time-0.01 not in inst.events:
+						evt = LogEvent()
+						evt.t = rounded_time-0.01
+						evt.packets = 0
+						evt.bytes = 0
+						inst.events[evt.t] = evt
+
+					evt = LogEvent()
+					evt.t = rounded_time+0.01
+					evt.packets = 0
+					evt.bytes = 0
+					inst.events[evt.t] = evt
+
+					#evt = LogEvent()
+					#evt.t = float(match.group(1))
+					#evt.src = match.group(2)
+					#evt.src_port = int(match.group(3))
+					#evt.dst = match.group(4)
+					#evt.dst_port = int(match.group(5))
+					#evt.tcp_len = int(match.group(6))
+					#inst.events[evt.t] = evt
+
 					continue
 		inst.adjust_time()
 		return inst
