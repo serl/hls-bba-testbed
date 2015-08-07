@@ -45,7 +45,7 @@ if __name__ == "__main__":
 			t.generate_schedule()
 			num += 1
 
-	algorithms = ('classic-13', 'bba0')
+	algorithms = ('classic-13', 'bba0', 'bba1')
 	bandwidths = ('800kbit', '1000kbit', '1200kbit', '1400kbit', '1600kbit', '1800kbit', '2000kbit', '2200kbit', '2400kbit', '2600kbit', '2800kbit', '3000kbit', '3200kbit', '3400kbit', '3600kbit', '3800kbit', '4000kbit', '4200kbit', '4400kbit', '4600kbit', '4800kbit', '5000kbit', '5200kbit', '5400kbit', '5600kbit', '5800kbit', '6000kbit')
 	collection = 'constant_two_con_bbb8_{0}_{1}p'.format(delay, buffer_size)
 	for (algo, curl) in get_algocurl_tuples(algorithms, ('yes', 'bandwidth')):
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 			t.generate_schedule()
 			num += 1
 
-	algorithms = ('classic-2', 'bba0')
+	algorithms = ('classic-2', 'bba0', 'bba1')
 	bandwidths = ('600kbit', '800kbit', '1000kbit', '1200kbit', '1400kbit', '1600kbit', '1800kbit', '2000kbit', '2200kbit', '2400kbit', '2600kbit', '2800kbit', '3000kbit', '3200kbit', '3400kbit', '3600kbit', '3800kbit', '4000kbit', '4200kbit', '4400kbit')
 	collection = 'constant_two_con_bipbop_{0}_{1}p'.format(delay, buffer_size)
 	for (algo, curl) in get_algocurl_tuples(algorithms, ('no', 'yes', 'bandwidth')):
