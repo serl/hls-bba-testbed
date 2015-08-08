@@ -154,6 +154,8 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			#cwnd subplot
 			ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
 			ax_packets.set_ylabel('(pkts)')
+			ax_msec = ax_packets.twinx()
+			ax_msec.set_ylabel('RTT (ms)', color='green')
 			#ax_bytes = ax_packets.twinx()
 
 			#tcpprobe
@@ -163,8 +165,11 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				ax_packets.step(tcpp_t, cwnd, where='post', color='red', label='cwnd', linewidth=thickness_factor)
 				ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
 				ax_packets.step(tcpp_t, ssthresh, where='post', color='gray', label='ssthresh', linewidth=thickness_factor)
+				rtt = [evt.srtt for evt in tcpp_events]
+				ax_msec.step(tcpp_t, rtt, color='green', alpha=0.7)
+
 				#inflight = [evt.inflight for evt in tcpp_events]
-				#ax_bytes.step(tcpp_t, inflight, where='post', color='green', label='in flight', linewidth=thickness_factor)
+				#ax_bytes.step(tcpp_t, inflight, where='post', color='yellow', label='in flight', linewidth=thickness_factor)
 
 				#sends = []
 				#cur_send_start = None
@@ -178,6 +183,9 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				#			cur_send_start = None
 				#for send in sends:
 				#	ax_bytes.axvspan(send[0] - session.start_time, send[1] - session.start_time, alpha=0.2, linewidth=0, color='purple')
+
+			for tl in ax_msec.get_yticklabels():
+				tl.set_color('green')
 
 			for req_time in VLClog.http_requests:
 				ax_packets.axvline(req_time - session.start_time, alpha=0.8, linestyle=':', linewidth=thickness_factor, color='black')
