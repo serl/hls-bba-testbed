@@ -235,7 +235,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 					burst_start_idx = idx
 
 			for burst in bursts:
-				ax_packets.axvspan(burst[0], burst[1], alpha=0.2+0.8*burst[2]/max_packets, linewidth=0, color='red')
+				ax_packets.axvspan(burst[0], burst[1], alpha=min(0.2+0.8*burst[2]/max_packets, 1), linewidth=0, color='red')
 
 		except:
 			pass
