@@ -485,14 +485,15 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 
 	plt.close()
 
-def plotScatters(sessions, export=False, export_big=False, thickness_factor=1):
+def plotScatters(sessions_summary, export=False, export_big=False, thickness_factor=1):
 	if export:
 		import matplotlib
 		matplotlib.use('Agg')
 	import matplotlib.pyplot as plt
 	fig = plt.figure()
 	plot_instability = True
-	plot_unfairness = False
+	plot_unfairness = True
+	tag_points = True
 	plot_rows = 2 * (int(plot_instability) + int(plot_unfairness)) + 1
 
 	tag_session = []
@@ -508,27 +509,27 @@ def plotScatters(sessions, export=False, export_big=False, thickness_factor=1):
 	lambda_session = []
 	lambda_player = []
 	unfairness = []
-	for session in sessions:
-		tag = "{0}_{1}".format(session.name.split('_')[0], session.run)
-		tag_session.append(tag)
-		gamma = session.get_fraction_oneidle()
-		gamma_session.append(gamma)
-		mu.append(session.get_fraction_both_overestimating())
-		mu_dry.append(session.get_fraction_both_overestimating(what='downloading_bandwidth'))
-		mu_bitrate.append(session.get_fraction_both_overestimating(what='downloading_bitrate'))
-		fairshare = session.get_fairshare()/1000
-		fairshare_session.append(fairshare)
-		lambdap = session.get_fraction_both_on()
-		lambda_session.append(lambdap)
+	for summary in sessions_summary.sessions:
+		tag_session.append(summary.tag)
+		gamma_session.append(summary.gamma)
+		mu.append(summary.mu)
+		mu_dry.append(summary.mu_dry)
+		mu_bitrate.append(summary.mu_bitrate)
+		fairshare_session.append(summary.fairshare)
+		lambda_session.append(summary.lambdap)
 		if plot_unfairness:
-			unfairness.append(session.get_avg_unfairness()/1000)
-		for VLClog in session.VLClogs:
-			tag_player.append(tag)
-			gamma_player.append(gamma)
+			unfairness.append(summary.unfairness)
+		for VLCsummary in summary.VLClogs:
+			tag_player.append(summary.tag)
+			gamma_player.append(summary.gamma)
 			if plot_instability:
-				instability.append(VLClog.get_instability())
-			fairshare_player.append(fairshare)
-			lambda_player.append(lambdap)
+				instability.append(VLCsummary.instability)
+			fairshare_player.append(summary.fairshare)
+			lambda_player.append(summary.lambdap)
+
+	if not tag_points:
+		tag_session = []
+		tag_player = []
 
 	row = 0
 
@@ -554,7 +555,7 @@ def plotScatters(sessions, export=False, export_big=False, thickness_factor=1):
 		ax_fairshare_inst.set_xlabel('fair share (kbit/s)')
 		ax_fairshare_inst.set_ylabel('instability (%)')
 		ax_fairshare_inst.scatter(fairshare_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=plt.get_cmap('cool'))
-		for s in sessions[0].streams:
+		for s in sessions_summary.streams:
 			ax_fairshare_inst.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
 		for i, tag in enumerate(tag_player):
 			ax_fairshare_inst.annotate(tag, (fairshare_player[i], instability[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
@@ -574,6 +575,8 @@ def plotScatters(sessions, export=False, export_big=False, thickness_factor=1):
 		ax_gamma_unfairness.set_xlabel(r'$\gamma$')
 		ax_gamma_unfairness.set_ylabel('unfairness (kbit/s)')
 		ax_gamma_unfairness.scatter(gamma_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+		for i, tag in enumerate(tag_session):
+			ax_gamma_unfairness.annotate(tag, (gamma_session[i], unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_gamma_unfairness.axis([0, None, 0, None])
 		row += 1
 
@@ -581,14 +584,18 @@ def plotScatters(sessions, export=False, export_big=False, thickness_factor=1):
 		ax_fairshare_unfairness.set_xlabel('fair share (kbit/s)')
 		ax_fairshare_unfairness.set_ylabel('unfairness (kbit/s)')
 		ax_fairshare_unfairness.scatter(fairshare_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
-		for s in sessions[0].streams:
+		for s in sessions_summary.streams:
 			ax_fairshare_inst.axvline(s/1000, alpha=0.8, linewidth=2*thickness_factor, color='red')
+		for i, tag in enumerate(tag_session):
+			ax_fairshare_unfairness.annotate(tag, (fairshare_session[i], unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_fairshare_unfairness.axis([0, None, 0, None])
 
 		ax_lambda_unfairness = plt.subplot2grid((plot_rows, 2), (row, 1))
 		ax_lambda_unfairness.set_xlabel(r'$\lambda$')
 		ax_lambda_unfairness.set_ylabel('unfairness (kbit/s)')
 		ax_lambda_unfairness.scatter(lambda_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+		for i, tag in enumerate(tag_session):
+			ax_lambda_unfairness.annotate(tag, (lambda_session[i], unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_lambda_unfairness.axis([0, None, 0, None])
 		row += 1
 
