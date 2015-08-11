@@ -485,15 +485,12 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 
 	plt.close()
 
-def plotScatters(sessions_summary, export=False, export_big=False, thickness_factor=1):
+def plotScatters(sessions_summary, export=False, export_big=False, thickness_factor=1, plot_instability=True, plot_unfairness=True, tag_points=True):
 	if export:
 		import matplotlib
 		matplotlib.use('Agg')
 	import matplotlib.pyplot as plt
 	fig = plt.figure()
-	plot_instability = True
-	plot_unfairness = True
-	tag_points = True
 	plot_rows = 2 * (int(plot_instability) + int(plot_unfairness)) + 1
 
 	tag_session = []
@@ -585,7 +582,7 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		ax_fairshare_unfairness.set_ylabel('unfairness (kbit/s)')
 		ax_fairshare_unfairness.scatter(fairshare_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
 		for s in sessions_summary.streams:
-			ax_fairshare_inst.axvline(s/1000, alpha=0.8, linewidth=2*thickness_factor, color='red')
+			ax_fairshare_unfairness.axvline(s/1000, alpha=0.8, linewidth=2*thickness_factor, color='red')
 		for i, tag in enumerate(tag_session):
 			ax_fairshare_unfairness.annotate(tag, (fairshare_session[i], unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_fairshare_unfairness.axis([0, None, 0, None])

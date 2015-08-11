@@ -9,9 +9,11 @@ if __name__ == "__main__":
 	filenames = sys.argv[1:]
 	assert len(filenames)
 	export = False
+	export_tag = False
 	export_big = False
 	if filenames[0].endswith('.png'):
 		export = filenames[0]
+		export_tag = filenames[0].replace('.png', '_tag.png')
 		export_big = filenames[0].replace('.png', '_big.png')
 		filenames = sys.argv[2:]
 
@@ -33,6 +35,7 @@ if __name__ == "__main__":
 		if len(p.results) == 0:
 			print "No runs in {0}".format(filename)
 			continue
+		print "Analyzing {0}...".format(filename)
 		for session in p.results:
 			if 'streams' not in sessions_summary.__dict__:
 				sessions_summary.streams = session.streams
@@ -53,6 +56,12 @@ if __name__ == "__main__":
 
 			sessions_summary.sessions.append(summary)
 
-	print "Plotting..."
-	plotScatters(sessions_summary, export, export_big=export_big, thickness_factor=2)
+	if not export:
+		print "Plotting..."
+		plotScatters(sessions_summary, thickness_factor=2, tag_points=True)
+	else:
+		print "Plotting {0} with tags...".format(export)
+		plotScatters(sessions_summary, export=export_tag, export_big=export_big, thickness_factor=2, tag_points=True)
+		print "Plotting {0} without tags...".format(export)
+		plotScatters(sessions_summary, export=export, thickness_factor=2, tag_points=False)
 
