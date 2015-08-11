@@ -485,11 +485,13 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 
 	plt.close()
 
-def plotScatters(sessions_summary, export=False, export_big=False, thickness_factor=1, plot_instability=True, plot_unfairness=True, tag_points=True):
+def plotScatters(sessions_summary, export=False, export_big=False, thickness_factor=1, plot_instability=True, plot_unfairness=True, tag_points=True, colorize=True):
 	if export:
 		import matplotlib
 		matplotlib.use('Agg')
 	import matplotlib.pyplot as plt
+	from matplotlib.colors import LinearSegmentedColormap
+
 	fig = plt.figure()
 	plot_rows = 2 * (int(plot_instability) + int(plot_unfairness)) + 1
 
@@ -528,30 +530,35 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		tag_session = []
 		tag_player = []
 
+	cdict = {'red': ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)), 'green': ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)), 'blue': ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0))}
+	cmap = LinearSegmentedColormap('Black', cdict)
+	if colorize:
+		cmap = plt.get_cmap('cool')
+
 	row = 0
 
 	ax_gamma_mu = plt.subplot2grid((plot_rows, 2), (row, 0))
-	ax_gamma_mu.set_xlabel(r'$\gamma$')
+	ax_gamma_mu.set_xlabel(r'$\gamma$', labelpad=0)
 	ax_gamma_mu.set_ylabel(r'$\mu$')
-	ax_gamma_mu.scatter(gamma_session, mu, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+	ax_gamma_mu.scatter(gamma_session, mu, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
 	for i, tag in enumerate(tag_session):
 		ax_gamma_mu.annotate(tag, (gamma_session[i], mu[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 	ax_gamma_mu.axis([0, None, 0, None])
 
 	if plot_instability:
 		ax_gamma_inst = plt.subplot2grid((plot_rows, 2), (row, 1))
-		ax_gamma_inst.set_xlabel(r'$\gamma$')
+		ax_gamma_inst.set_xlabel(r'$\gamma$', labelpad=0)
 		ax_gamma_inst.set_ylabel('instability (%)')
-		ax_gamma_inst.scatter(gamma_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=plt.get_cmap('cool'))
+		ax_gamma_inst.scatter(gamma_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=cmap)
 		for i, tag in enumerate(tag_player):
 			ax_gamma_inst.annotate(tag, (gamma_player[i], instability[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_gamma_inst.axis([0, None, 0, None])
 		row += 1
 
 		ax_fairshare_inst = plt.subplot2grid((plot_rows, 2), (row, 0))
-		ax_fairshare_inst.set_xlabel('fair share (kbit/s)')
+		ax_fairshare_inst.set_xlabel('fair share (kbit/s)', labelpad=0)
 		ax_fairshare_inst.set_ylabel('instability (%)')
-		ax_fairshare_inst.scatter(fairshare_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=plt.get_cmap('cool'))
+		ax_fairshare_inst.scatter(fairshare_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=cmap)
 		for s in sessions_summary.streams:
 			ax_fairshare_inst.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
 		for i, tag in enumerate(tag_player):
@@ -559,9 +566,9 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		ax_fairshare_inst.axis([0, None, 0, None])
 
 		ax_lambda_inst = plt.subplot2grid((plot_rows, 2), (row, 1))
-		ax_lambda_inst.set_xlabel(r'$\lambda$')
+		ax_lambda_inst.set_xlabel(r'$\lambda$', labelpad=0)
 		ax_lambda_inst.set_ylabel('instability (%)')
-		ax_lambda_inst.scatter(lambda_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=plt.get_cmap('cool'))
+		ax_lambda_inst.scatter(lambda_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=cmap)
 		for i, tag in enumerate(tag_player):
 			ax_lambda_inst.annotate(tag, (lambda_player[i], instability[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_lambda_inst.axis([0, None, 0, None])
@@ -569,45 +576,45 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 
 	if plot_unfairness:
 		ax_gamma_unfairness = plt.subplot2grid((plot_rows, 2), (row, 1))
-		ax_gamma_unfairness.set_xlabel(r'$\gamma$')
+		ax_gamma_unfairness.set_xlabel(r'$\gamma$', labelpad=0)
 		ax_gamma_unfairness.set_ylabel('unfairness (kbit/s)')
-		ax_gamma_unfairness.scatter(gamma_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+		ax_gamma_unfairness.scatter(gamma_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
 		for i, tag in enumerate(tag_session):
 			ax_gamma_unfairness.annotate(tag, (gamma_session[i], unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_gamma_unfairness.axis([0, None, 0, None])
 		row += 1
 
 		ax_fairshare_unfairness = plt.subplot2grid((plot_rows, 2), (row, 0))
-		ax_fairshare_unfairness.set_xlabel('fair share (kbit/s)')
+		ax_fairshare_unfairness.set_xlabel('fair share (kbit/s)', labelpad=0)
 		ax_fairshare_unfairness.set_ylabel('unfairness (kbit/s)')
-		ax_fairshare_unfairness.scatter(fairshare_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+		ax_fairshare_unfairness.scatter(fairshare_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
 		for s in sessions_summary.streams:
-			ax_fairshare_unfairness.axvline(s/1000, alpha=0.8, linewidth=2*thickness_factor, color='red')
+			ax_fairshare_unfairness.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
 		for i, tag in enumerate(tag_session):
 			ax_fairshare_unfairness.annotate(tag, (fairshare_session[i], unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_fairshare_unfairness.axis([0, None, 0, None])
 
 		ax_lambda_unfairness = plt.subplot2grid((plot_rows, 2), (row, 1))
-		ax_lambda_unfairness.set_xlabel(r'$\lambda$')
+		ax_lambda_unfairness.set_xlabel(r'$\lambda$', labelpad=0)
 		ax_lambda_unfairness.set_ylabel('unfairness (kbit/s)')
-		ax_lambda_unfairness.scatter(lambda_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+		ax_lambda_unfairness.scatter(lambda_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
 		for i, tag in enumerate(tag_session):
 			ax_lambda_unfairness.annotate(tag, (lambda_session[i], unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_lambda_unfairness.axis([0, None, 0, None])
 		row += 1
 
 	ax_gamma_mu_dry = plt.subplot2grid((plot_rows, 2), (row, 0))
-	ax_gamma_mu_dry.set_xlabel(r'$\gamma$')
+	ax_gamma_mu_dry.set_xlabel(r'$\gamma$', labelpad=0)
 	ax_gamma_mu_dry.set_ylabel(r'$\mu$ dry')
-	ax_gamma_mu_dry.scatter(gamma_session, mu_dry, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+	ax_gamma_mu_dry.scatter(gamma_session, mu_dry, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
 	for i, tag in enumerate(tag_session):
 		ax_gamma_mu_dry.annotate(tag, (gamma_session[i], mu_dry[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 	ax_gamma_mu_dry.axis([0, None, 0, None])
 
 	ax_gamma_mu_bitrate = plt.subplot2grid((plot_rows, 2), (row, 1))
-	ax_gamma_mu_bitrate.set_xlabel(r'$\gamma$')
+	ax_gamma_mu_bitrate.set_xlabel(r'$\gamma$', labelpad=0)
 	ax_gamma_mu_bitrate.set_ylabel(r'$\mu$ bitrate')
-	ax_gamma_mu_bitrate.scatter(gamma_session, mu_bitrate, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=plt.get_cmap('cool'))
+	ax_gamma_mu_bitrate.scatter(gamma_session, mu_bitrate, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
 	for i, tag in enumerate(tag_session):
 		ax_gamma_mu_bitrate.annotate(tag, (gamma_session[i], mu_bitrate[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 	ax_gamma_mu_bitrate.axis([0, None, 0, None])

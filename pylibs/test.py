@@ -1,4 +1,5 @@
 import os, re, json, errno, string, random
+from generic import mkdir_p
 
 class Test(object):
 	save_dir = 'tests'
@@ -70,14 +71,6 @@ def bw_convert(bw): #read tc style, convert to bits/s (hope so)
 	if unit == 'bps' or unit == '':
 		return int(value*8)
 	raise Exception('Malformed bandwidth, see tc docs.')
-
-def mkdir_p(path):
-	try:
-		os.makedirs(path)
-	except OSError as exc:
-		if exc.errno == errno.EEXIST and os.path.isdir(path):
-			pass
-		else: raise
 
 class Event(object):
 	delay=0

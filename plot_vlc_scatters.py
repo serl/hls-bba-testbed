@@ -2,6 +2,7 @@ import sys, os
 from pylibs.log import VLCSession
 from pylibs.plot import plotScatters
 from pylibs.parallelize import Parallelize
+from pylibs.generic import mkdir_p
 
 class EmptyObject(object): pass
 
@@ -9,12 +10,8 @@ if __name__ == "__main__":
 	filenames = sys.argv[1:]
 	assert len(filenames)
 	export = False
-	export_tag = False
-	export_big = False
 	if filenames[0].endswith('.png'):
 		export = filenames[0]
-		export_tag = filenames[0].replace('.png', '_tag.png')
-		export_big = filenames[0].replace('.png', '_big.png')
 		filenames = sys.argv[2:]
 
 	sessions_summary = EmptyObject()
@@ -60,8 +57,18 @@ if __name__ == "__main__":
 		print "Plotting..."
 		plotScatters(sessions_summary, thickness_factor=2, tag_points=True)
 	else:
+		mkdir_p('scatterplots')
+		export_bw = os.path.join('scatterplots', export)
+		mkdir_p(os.path.join('scatterplots', 'tag'))
+		export_tag = os.path.join('scatterplots', 'tag', export.replace('.png', '_tag.png'))
+		export_big = os.path.join('scatterplots', 'tag', export.replace('.png', '_big.png'))
+		mkdir_p(os.path.join('scatterplots', 'color'))
+		export_color = os.path.join('scatterplots', 'color', export.replace('.png', '_color.png'))
+
 		print "Plotting {0} with tags...".format(export)
 		plotScatters(sessions_summary, export=export_tag, export_big=export_big, thickness_factor=2, tag_points=True)
 		print "Plotting {0} without tags...".format(export)
-		plotScatters(sessions_summary, export=export, thickness_factor=2, tag_points=False)
+		plotScatters(sessions_summary, export=export_color, thickness_factor=2, tag_points=False)
+		print "Plotting {0} without colors...".format(export)
+		plotScatters(sessions_summary, export=export_bw, thickness_factor=2, tag_points=False, colorize=False)
 
