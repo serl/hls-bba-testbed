@@ -11,6 +11,8 @@ wait
 # BipBop
 nice python plot_vlc_scatters.py two_con_scatters_bipbop_classic_keepalive.png tests/constant_two_con_bipbop_200ms_200p/*_classic-2_keepalive &
 nice python plot_vlc_scatters.py two_con_scatters_bipbop_classic_keepalive_est.png tests/constant_two_con_bipbop_200ms_200p/*_classic-2_keepalive_est &
+wait
 nice python plot_vlc_scatters.py two_con_scatters_bipbop_bba0_keepalive.png tests/constant_two_con_bipbop_200ms_200p/*_bba0_keepalive &
+nice python plot_vlc_scatters.py two_con_scatters_bipbop_bba1_keepalive.png tests/constant_two_con_bipbop_200ms_200p/*_bba1_keepalive_est &
 wait
 

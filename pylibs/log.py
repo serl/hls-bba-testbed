@@ -272,6 +272,11 @@ class VLCSession(Session):
 			last_value = value
 		return wsum/wlen
 
+	def get_general_unfairness(self):
+		if len(self.VLClogs) != 2:
+			raise Exception('No sense in trying to measure unfairness. Need exactly 2 clients.')
+		return abs(self.VLClogs[0].get_avg_bitrate() - self.VLClogs[1].get_avg_bitrate())
+
 	def get_fraction_oneidle(self): #nossdav-akhshabi gamma: fraction of time with exactly one client off
 		if not hasattr(self, '_fraction_oneidle_cache'):
 			if len(self.VLClogs) != 2:

@@ -493,7 +493,7 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 	from matplotlib.colors import LinearSegmentedColormap
 
 	fig = plt.figure()
-	plot_rows = 2 * (int(plot_instability) + int(plot_unfairness)) + 1
+	plot_rows = 2 * (int(plot_instability) + 2*int(plot_unfairness)) + 1
 
 	tag_session = []
 	tag_player = []
@@ -508,6 +508,7 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 	lambda_session = []
 	lambda_player = []
 	unfairness = []
+	general_unfairness = []
 	for summary in sessions_summary.sessions:
 		tag_session.append(summary.tag)
 		gamma_session.append(summary.gamma)
@@ -518,6 +519,7 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		lambda_session.append(summary.lambdap)
 		if plot_unfairness:
 			unfairness.append(summary.unfairness)
+			general_unfairness.append(summary.general_unfairness)
 		for VLCsummary in summary.VLClogs:
 			tag_player.append(summary.tag)
 			gamma_player.append(summary.gamma)
@@ -603,6 +605,34 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		ax_lambda_unfairness.axis([0, None, 0, None])
 		row += 1
 
+		ax_gamma_gunfairness = plt.subplot2grid((plot_rows, 2), (row, 1))
+		ax_gamma_gunfairness.set_xlabel(r'$\gamma$', labelpad=0)
+		ax_gamma_gunfairness.set_ylabel('general unfairness (kbit/s)')
+		ax_gamma_gunfairness.scatter(gamma_session, general_unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
+		for i, tag in enumerate(tag_session):
+			ax_gamma_gunfairness.annotate(tag, (gamma_session[i], general_unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
+		ax_gamma_gunfairness.axis([0, None, 0, None])
+		row += 1
+
+		ax_fairshare_gunfairness = plt.subplot2grid((plot_rows, 2), (row, 0))
+		ax_fairshare_gunfairness.set_xlabel('fair share (kbit/s)', labelpad=0)
+		ax_fairshare_gunfairness.set_ylabel('general unfairness (kbit/s)')
+		ax_fairshare_gunfairness.scatter(fairshare_session, general_unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
+		for s in sessions_summary.streams:
+			ax_fairshare_gunfairness.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
+		for i, tag in enumerate(tag_session):
+			ax_fairshare_gunfairness.annotate(tag, (fairshare_session[i], general_unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
+		ax_fairshare_gunfairness.axis([0, None, 0, None])
+
+		ax_lambda_gunfairness = plt.subplot2grid((plot_rows, 2), (row, 1))
+		ax_lambda_gunfairness.set_xlabel(r'$\lambda$', labelpad=0)
+		ax_lambda_gunfairness.set_ylabel('general unfairness (kbit/s)')
+		ax_lambda_gunfairness.scatter(lambda_session, general_unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
+		for i, tag in enumerate(tag_session):
+			ax_lambda_gunfairness.annotate(tag, (lambda_session[i], general_unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
+		ax_lambda_gunfairness.axis([0, None, 0, None])
+		row += 1
+
 	ax_gamma_mu_dry = plt.subplot2grid((plot_rows, 2), (row, 0))
 	ax_gamma_mu_dry.set_xlabel(r'$\gamma$', labelpad=0)
 	ax_gamma_mu_dry.set_ylabel(r'$\mu$ dry')
@@ -620,10 +650,10 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 	ax_gamma_mu_bitrate.axis([0, None, 0, None])
 
 	if export:
-		fig.set_size_inches(22,12)
+		fig.set_size_inches(22,4*plot_rows)
 		fig.savefig(export, bbox_inches='tight')
 		if export_big:
-			fig.set_size_inches(88,48)
+			fig.set_size_inches(88,16*plot_rows)
 			fig.savefig(export_big, bbox_inches='tight')
 	else:
 		plt.show()
