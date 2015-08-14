@@ -519,19 +519,24 @@ class RouterBufferLog(Log):
 	def parse(cls, filename):
 		inst = cls()
 		first_instant = -1
-		line_re = re.compile('^([\d\.]+) backlog ([\dKM]+)b (\d+)p requeues (\d+)')
+		start_re = re.compile('^([\d\.]+)')
+		backlog_pattern = ' backlog ([\dKM]+)b (\d+)p requeues (\d+)'
 		with open(filename, "r") as contents:
 			for line in contents:
-				match = line_re.match(line)
+				match = start_re.match(line)
 				if match:
 					evt = LogEvent()
 					evt.t = float(match.group(1))
-					if first_instant == -1:
-						first_instant = evt.t
-					#evt.rtime = evt.t - first_instant
-					evt.bytes = match.group(2)
-					evt.packets = int(match.group(3))
-					evt.requeues = int(match.group(4))
+					bytes = []
+					packets = []
+					requeues = []
+					for m in re.finditer(backlog_pattern, line[match.end(1):]):
+						bytes.append(m.group(1))
+						packets.append(int(m.group(2)))
+						requeues.append(int(m.group(3)))
+					#evt.bytes = tuple(bytes)
+					evt.packets = tuple(packets)
+					#evt.requeues = tuple(requeues)
 					inst.events[evt.t] = evt
 					continue
 		inst.adjust_time()

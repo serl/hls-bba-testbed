@@ -207,7 +207,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, where='post', color='black', label='bw buffer', linewidth=thickness_factor)
 		#ax_packets.step(delay_buffer_t, delay_buffer_packets, where='post', color='purple', label='delay buffer', linewidth=thickness_factor)
 
-		ax_packets.axis([plot_start, plot_end, 0, max(bandwidth_buffer_packets)*1.1])
+		ax_packets.axis([plot_start, plot_end, 0, None])
 		#handles, labels = ax_packets.get_legend_handles_labels()
 		#ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
