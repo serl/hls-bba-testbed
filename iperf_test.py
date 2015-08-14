@@ -1,18 +1,11 @@
 import sys, os, errno
+from pylibs.generic import mkdir_p
 
 bandwidth_buffersize=int(sys.argv[1])
 delay=sys.argv[2]
 
 testname='iperf_%s_%dp' % (delay, bandwidth_buffersize)
 group_dir=os.path.join('tests', testname)
-
-def mkdir_p(path):
-	try:
-		os.makedirs(path)
-	except OSError as exc:
-		if exc.errno == errno.EEXIST and os.path.isdir(path):
-			pass
-		else: raise
 
 tests = (
 	{ 'bw': '300kbit', 'time': 300 },
@@ -21,11 +14,8 @@ tests = (
 	{ 'bw': '10mbit', 'time': 60 },
 )
 
-for test in tests:
-	save_dir = os.path.join(group_dir, test['bw'])
+for i, test in enumerate(tests):
 	scheduler_commands = '''\
-#eval LOGDIR=/vagrant/{save_dir}
-
 client0 0 iperf -s &>$LOGDIR/iperf_s.log & echo $! > /tmp/pid_iperf_server
 delay 0 /vagrant/code/tc_helper.sh set_delay {delay}
 bandwidth 0 /vagrant/code/tc_helper.sh set_bw {bandwidth} {bandwidth_buffersize}
@@ -43,7 +33,8 @@ bandwidth {killtime} sudo kill -SIGTERM $(cat /tmp/pid_buffersize)
 delay {cleantime} /vagrant/code/tc_helper.sh destroy
 bandwidth {cleantime} /vagrant/code/tc_helper.sh destroy
 
-'''.format(save_dir=save_dir, bandwidth=test['bw'], delay=delay, bandwidth_buffersize=bandwidth_buffersize, interval=test['time'], killtime=test['time']+5, cleantime=test['time']+10)
+'''.format(bandwidth=test['bw'], delay=delay, bandwidth_buffersize=bandwidth_buffersize, interval=test['time'], killtime=test['time']+5, cleantime=test['time']+10)
+	save_dir = os.path.join(group_dir, "{0:02d}_{1}".format(i+1, test['bw']))
 	mkdir_p(save_dir)
 	with open(os.path.join(save_dir, 'jobs.sched'), 'w') as f:
 		f.write(scheduler_commands)
