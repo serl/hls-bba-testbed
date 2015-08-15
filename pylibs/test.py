@@ -116,9 +116,10 @@ class TcpDump(KilledEvent):
 
 class BwChange(Event):
 	buffer_size=200
+	rtt=0
 	host='bandwidth'
 	def commands(self):
-		return '%s %d /vagrant/code/tc_helper.sh set_bw %s %d' % (self.host, self.delay, self.bw, self.buffer_size)
+		return '{0} {1} /vagrant/code/tc_helper.sh set_bw {2} {3} {4}'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt)
 	def add_test_infos(self, test):
 		test.bw_profile[self.delay] = bw_convert(self.bw)
 
@@ -126,5 +127,5 @@ class DelayChange(Event):
 	packet_delay='200ms'
 	host='delay'
 	def commands(self):
-		return '%s %d /vagrant/code/tc_helper.sh set_delay %s' % (self.host, self.delay, self.packet_delay)
+		return '{0} {1} /vagrant/code/tc_helper.sh set_delay {2}'.format(self.host, self.delay, self.packet_delay)
 
