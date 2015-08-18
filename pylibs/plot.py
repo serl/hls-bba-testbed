@@ -248,7 +248,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		ax_unfairness.set_ylabel('unfairness (kbit/s)', color='#550000')
 		ax_unfairness.step(unfairness.keys(), unfairness.values(), where='post', color='#550000', linewidth=thickness_factor)
 		ax_unfairness.axis([plot_start, plot_end, 0, max(unfairness.values())*1.1])
-		ax_unfairness.text(plot_end*.99, max(unfairness.values())*0.05, 'avg unfairness: {0:.2f}kbit/s'.format(session.get_avg_unfairness()/1000), color='#550000', weight='semibold', ha='right')
+		ax_unfairness.text(.99, .02, 'avg unfairness: {0:.2f}kbit/s, general unfairness: {1:.2f}kbit/s'.format(session.get_avg_unfairness()/1000, session.get_general_unfairness()/1000), transform=ax_unfairness.transAxes, color='#550000', weight='semibold', ha='right')
 		locs = ax_unfairness.get_yticks()
 		ax_unfairness.set_yticklabels(map("{0:.0f}".format, locs/1000), color='#550000')
 
