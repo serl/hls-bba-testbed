@@ -90,6 +90,9 @@ function set_bw {
     check_success
     buffer_echo=": $percentage% BDP"
     buffer=$((bw_bits * rtt_ms * percentage / 8 / mss / 100000))
+    if [ "$buffer" -le "0" ]; then
+      buffer=1
+    fi
   fi
 
   echo "Adding/replacing netem qdisc with rate ${bw_bits}bits/s (buffer of $buffer packets$buffer_echo)"
