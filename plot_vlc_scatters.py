@@ -46,6 +46,7 @@ if __name__ == "__main__":
 			summary.lambdap = session.get_fraction_both_on()
 			summary.unfairness = session.get_avg_unfairness()/1000
 			summary.general_unfairness = session.get_general_unfairness()/1000
+			summary.quality_unfairness = session.get_quality_unfairness()
 			summary.VLClogs = []
 			for VLClog in session.VLClogs:
 				VLCsummary = EmptyObject()

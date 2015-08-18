@@ -115,6 +115,9 @@ class VLCLog(Log):
 	def get_avg_bitrate(self, skip=0):
 		return float(sum(self.composition[skip:]))/len(self.composition[skip:])
 
+	def get_avg_quality(self, skip=0):
+		return 100*float(sum(self._composition_streams_id[skip:]))/len(self._composition_streams_id[skip:])/len(self.streams)
+
 	def get_avg_buffer(self, skip=0):
 		events = [evt for t, evt in self.events.iteritems() if evt.playing_time >= skip*1000]
 		return float(sum([evt.buffer for evt in events]))/len(events)
@@ -276,6 +279,11 @@ class VLCSession(Session):
 		if len(self.VLClogs) != 2:
 			raise Exception('No sense in trying to measure unfairness. Need exactly 2 clients.')
 		return abs(self.VLClogs[0].get_avg_bitrate() - self.VLClogs[1].get_avg_bitrate())
+
+	def get_quality_unfairness(self):
+		if len(self.VLClogs) != 2:
+			raise Exception('No sense in trying to measure unfairness. Need exactly 2 clients.')
+		return abs(self.VLClogs[0].get_avg_quality() - self.VLClogs[1].get_avg_quality())
 
 	def get_fraction_oneidle(self): #nossdav-akhshabi gamma: fraction of time with exactly one client off
 		if not hasattr(self, '_fraction_oneidle_cache'):
