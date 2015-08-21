@@ -285,6 +285,53 @@ class VLCSession(Session):
 			raise Exception('No sense in trying to measure unfairness. Need exactly 2 clients.')
 		return abs(self.VLClogs[0].get_avg_quality() - self.VLClogs[1].get_avg_quality())
 
+	def get_total_measured(self):
+		if not hasattr(self, '_total_measured_cache'):
+			time_relative_to = self.start_time
+
+			all_t = set()
+			for VLClog in self.VLClogs:
+				all_t = all_t | set(VLClog.events.keys())
+			all_t = sorted(list(all_t))
+
+			usage = collections.OrderedDict()
+			for t in all_t:
+				u = 0.0
+				for VLClog in self.VLClogs:
+					bw = VLClog.get_step_value_at(t, lambda evt: evt.downloading_bandwidth)
+					if bw is not None:
+						u += bw
+				rel_time = t - time_relative_to
+				usage[rel_time] = u/self.get_bottleneck_at(rel_time)*100
+			self._total_measured_cache = usage
+		return self._total_measured_cache
+
+	def get_avg_total_measured(self):
+		last_t = None
+		last_value = None
+		wsum = 0.0
+		wlen = 0.0
+		for t, value in self.get_total_measured().iteritems():
+			if last_t is None:
+				last_t = t
+				last_value = value
+				continue
+			weight = t - last_t
+			wlen += weight
+			wsum += weight * last_value
+			last_t = t
+			last_value = value
+		return wsum/wlen
+
+	def get_avg_router_idle(self):
+		total = len(self.bandwidth_buffer.events)
+		count = 0.0
+		for t, evt in self.bandwidth_buffer.events.iteritems():
+			packets = evt.packets[0]
+			if packets == 0:
+				count += 1
+		return count/total*100
+
 	def get_fraction_oneidle(self): #nossdav-akhshabi gamma: fraction of time with exactly one client off
 		if not hasattr(self, '_fraction_oneidle_cache'):
 			if len(self.VLClogs) != 2:
@@ -310,6 +357,10 @@ class VLCSession(Session):
 			self._fraction_oneidle_cache = one_idle_time/self.duration
 
 		return self._fraction_oneidle_cache
+
+	def get_bottleneck_at(self, rel_t):
+		k = max([t for t in self.bwprofile.keys() if t <= rel_t])
+		return self.bwprofile[k]
 
 	def get_fairshare(self):
 		return max(self.bwprofile.values()) / len(self.clients)
@@ -551,15 +602,19 @@ class RouterBufferLog(Log):
 		return inst
 
 class TsharkPacketsToClients(Log):
+	def get_avg_rate(self):
+		return self.avg_rate
+
 	@classmethod
 	def parse(cls, filename):
 		inst = cls()
+		inst.sampling_time = 0.01 #if you change the sampling_time you'll break the line below!
 		line_re = re.compile('^([\d\.]+),([\d\.]+),(\d+),([\d\.]+),(\d+),(\d+)$')
 		with open(filename, "r") as contents:
 			for line in contents:
 				match = line_re.match(line)
 				if match:
-					rounded_time = round(float(match.group(1)), 2)
+					rounded_time = round(float(match.group(1)), 2) #this one!
 					evt = None
 					try:
 						evt = inst.events[rounded_time]
@@ -568,22 +623,26 @@ class TsharkPacketsToClients(Log):
 						evt.t = rounded_time
 						evt.packets = 0
 						evt.bytes = 0
+						evt.rate = 0
 						inst.events[evt.t] = evt
 					evt.packets += 1
 					evt.bytes += int(match.group(6))
+					evt.rate = float(evt.bytes)*8/inst.sampling_time
 
 					#make sure the plot will have zeros where needed!
-					if rounded_time-0.01 not in inst.events:
+					if rounded_time-inst.sampling_time not in inst.events:
 						evt = LogEvent()
-						evt.t = rounded_time-0.01
+						evt.t = rounded_time-inst.sampling_time
 						evt.packets = 0
 						evt.bytes = 0
+						evt.rate = 0
 						inst.events[evt.t] = evt
 
 					evt = LogEvent()
-					evt.t = rounded_time+0.01
+					evt.t = rounded_time+inst.sampling_time
 					evt.packets = 0
 					evt.bytes = 0
+					evt.rate = 0
 					inst.events[evt.t] = evt
 
 					#evt = LogEvent()
@@ -597,6 +656,9 @@ class TsharkPacketsToClients(Log):
 
 					continue
 		inst.adjust_time()
+		rate_sum = sum([evt.rate for evt in inst.events.values()])
+		total_values = int((inst.end_time-inst.start_time)/inst.sampling_time)+1
+		inst.avg_rate = float(rate_sum)/total_values
 		return inst
 
 class TsharkAnalysis(Log):

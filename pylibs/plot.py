@@ -166,7 +166,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
 				ax_packets.step(tcpp_t, ssthresh, where='post', color='gray', label='ssthresh', linewidth=thickness_factor)
 				rtt = [evt.srtt for evt in tcpp_events]
-				ax_msec.step(tcpp_t, rtt, color='green', alpha=0.7)
+				ax_msec.step(tcpp_t, rtt, color='green', alpha=0.5)
 
 				#inflight = [evt.inflight for evt in tcpp_events]
 				#ax_bytes.step(tcpp_t, inflight, where='post', color='yellow', label='in flight', linewidth=thickness_factor)
@@ -204,21 +204,35 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		ax_packets.set_ylabel('router buffer (pkts)')
 
 		#buffer
-		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, where='post', color='black', label='bw buffer', linewidth=thickness_factor)
+		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, where='post', color='green', label='bw buffer', linewidth=thickness_factor)
 		#ax_packets.step(delay_buffer_t, delay_buffer_packets, where='post', color='purple', label='delay buffer', linewidth=thickness_factor)
 
 		ax_packets.axis([plot_start, plot_end, 0, None])
 		#handles, labels = ax_packets.get_legend_handles_labels()
 		#ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
+		#total_measured = session.get_total_measured()
+		#ax_usage = ax_packets.twinx()
+		#ax_usage.set_ylabel('Total BW measured (%)', color='red')
+		#ax_usage.step(total_measured.keys(), total_measured.values(), where='post', color='red', linewidth=thickness_factor)
+		#ax_usage.axis([plot_start, plot_end, 0, None])
+		#for tl in ax_usage.get_yticklabels():
+		#	tl.set_color('red')
+		avg_out_rate = '-'
+		avg_in_rate = '-'
 		try:
-			bandwidth_toclients_eth1_t, bandwidth_toclients_eth1_packets = session.bandwidth_eth1_toclients.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
-			#bandwidth_toclients_eth2_t, bandwidth_toclients_eth2_packets = session.bandwidth_eth2_toclients.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
+			rate = session.bandwidth_eth2_toclients.get_avg_rate()
+			avg_out_rate = '{0:.2f}kbit/s'.format(rate/1000)
+			if len(session.bwprofile) == 1:
+				avg_out_rate += ' ({0:.1f}%)'.format(rate/session.bwprofile.values()[0]*100)
+			avg_in_rate = '{0:.2f}kbit/s'.format(session.bandwidth_eth1_toclients.get_avg_rate()/1000)
+		except:
+			pass
+		ax_packets.text(.99, .02, 'avg total bw measured: {0:.1f}%, avg in rate: {1}, avg out rate: {2}, router idle: {3:.1f}%'.format(session.get_avg_total_measured(), avg_in_rate, avg_out_rate, session.get_avg_router_idle()), transform=ax_packets.transAxes, weight='semibold', ha='right')
 
-			#ax_flowingpackets = ax_packets.twinx()
-			#ax_flowingpackets.step(bandwidth_toclients_eth1_t, bandwidth_toclients_eth1_packets, where='mid', color='red', alpha=0.5, linewidth=thickness_factor)
-			#ax_flowingpackets.step(bandwidth_toclients_eth2_t, bandwidth_toclients_eth2_packets, where='mid', color='green', alpha=0.5, linewidth=thickness_factor)
-			#ax_flowingpackets.axis([plot_start, plot_end, 0, None])
+		try:
+			h_sampling_time = session.bandwidth_eth1_toclients.sampling_time/2
+			bandwidth_toclients_eth1_t, bandwidth_toclients_eth1_packets = session.bandwidth_eth1_toclients.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
 
 			max_packets = max(bandwidth_toclients_eth1_packets)
 			burst_start_idx = None
@@ -227,7 +241,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				time = bandwidth_toclients_eth1_t[idx]
 				if burst_start_idx is not None:
 					if packets != bandwidth_toclients_eth1_packets[burst_start_idx]:
-						bursts.append((bandwidth_toclients_eth1_t[burst_start_idx]-0.005, bandwidth_toclients_eth1_t[idx-1]+0.005, bandwidth_toclients_eth1_packets[burst_start_idx]))
+						bursts.append((bandwidth_toclients_eth1_t[burst_start_idx]-h_sampling_time, bandwidth_toclients_eth1_t[idx-1]+h_sampling_time, bandwidth_toclients_eth1_packets[burst_start_idx]))
 						burst_start_idx = None
 						if packets > 0:
 							burst_start_idx = idx
@@ -236,6 +250,14 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 			for burst in bursts:
 				ax_packets.axvspan(burst[0], burst[1], alpha=min(0.2+0.8*burst[2]/max_packets, 1), linewidth=0, color='red')
+
+			#bandwidth_toclients_eth2_t, bandwidth_toclients_eth2_rate = session.bandwidth_eth2_toclients.get_events(time_relative_to=session, values_fn=lambda evt: evt.rate)
+			#ax_rate = ax_packets.twinx()
+			#ax_rate.set_ylabel('Out rate (bit/s)', color='red')
+			#ax_rate.step(bandwidth_toclients_eth2_t, bandwidth_toclients_eth2_rate, where='post', color='red', linewidth=thickness_factor)
+			#ax_rate.axis([plot_start, plot_end, 0, None])
+			#for tl in ax_rate.get_yticklabels():
+			#	tl.set_color('red')
 
 		except:
 			pass
