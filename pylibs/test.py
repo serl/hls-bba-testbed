@@ -68,8 +68,8 @@ def bw_convert(bw): #read tc style, convert to bits/s (hope so)
 		return int(value*1000)
 	if unit == 'mbit':
 		return int(value*1000000)
-	if unit == 'bps' or unit == '':
-		return int(value*8)
+	if unit == 'bit' or unit == '':
+		return int(value)
 	raise Exception('Malformed bandwidth, see tc docs.')
 
 class Event(object):
