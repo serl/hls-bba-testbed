@@ -301,8 +301,7 @@ class VLCSession(Session):
 					bw = VLClog.get_step_value_at(t, lambda evt: evt.downloading_bandwidth)
 					if bw is not None:
 						u += bw
-				rel_time = t - time_relative_to
-				usage[rel_time] = u/self.get_bottleneck_at(rel_time)*100
+				usage[t - time_relative_to] = u/self.get_bottleneck_at(t)*100
 			self._total_measured_cache = usage
 		return self._total_measured_cache
 
@@ -358,8 +357,8 @@ class VLCSession(Session):
 
 		return self._fraction_oneidle_cache
 
-	def get_bottleneck_at(self, rel_t):
-		k = max([t for t in self.bwprofile.keys() if t <= rel_t])
+	def get_bottleneck_at(self, time):
+		k = max([t for t in self.bwprofile.keys() if t <= time])
 		return self.bwprofile[k]
 
 	def get_fairshare(self):
@@ -437,6 +436,24 @@ class VLCSession(Session):
 
 		return self._fraction_both_on
 
+	def get_bwprofile(self, time_relative_to=None):
+		if not len(self.bwprofile):
+			return None
+
+		if time_relative_to is None:
+			time_relative_to = self
+		if Session in type(time_relative_to).__bases__:
+			time_relative_to = time_relative_to.start_time
+
+		bwprofile_t = []
+		bwprofile_v = []
+		for rel_t, v in sorted(self.bwprofile.iteritems()):
+			bwprofile_t.append(rel_t - time_relative_to)
+			bwprofile_v.append(v)
+		bwprofile_t.append(self.duration)
+		bwprofile_v.append(bwprofile_v[-1])
+		return (bwprofile_t, bwprofile_v)
+
 	@classmethod
 	def parse(cls, dirname):
 		inst = cls()
@@ -467,7 +484,7 @@ class VLCSession(Session):
 					session = json.loads(match.group(1))
 					inst.name = session['name']
 					inst.collection = session['collection']
-					inst.bwprofile = {int(k): v for k,v in session['bwprofile'].iteritems()}
+					inst.bwprofile = {int(k)+inst.bandwidth_buffer.start_time: v for k,v in session['bwprofile'].iteritems()}
 					inst.max_display_bits = max(inst.bwprofile.values())
 					inst.clients = session['clients']
 					for client in inst.clients:

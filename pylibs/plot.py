@@ -52,13 +52,9 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		#session data
 		for stream in session.streams:
 			ax_bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
-		if len(session.bwprofile):
-			bwprofile = sorted(session.bwprofile.iteritems())
-			bwprofile.append((plot_end, bwprofile[-1][1]))
-			bwprofile_t = [t for t, v in bwprofile]
-			bwprofile_v = [v for t, v in bwprofile]
-			bwprofile_v = [bwprofile_v[0]] + bwprofile_v[:-1]
-			ax_bits.step(bwprofile_t, bwprofile_v, marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bw limit')
+		bwprofile = session.get_bwprofile()
+		if bwprofile is not None:
+			ax_bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bw limit')
 
 		#client data
 		vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
@@ -107,13 +103,10 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 				for stream in session.streams:
 					ax_bba1bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
-				if len(session.bwprofile):
-					bwprofile = sorted(session.bwprofile.iteritems())
-					bwprofile.append((plot_end, bwprofile[-1][1]))
-					bwprofile_t = [t for t, v in bwprofile]
-					bwprofile_v = [v for t, v in bwprofile]
-					bwprofile_v = [bwprofile_v[0]] + bwprofile_v[:-1]
-					ax_bba1bits.step(bwprofile_t, bwprofile_v, marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bw limit')
+
+				bwprofile = session.get_bwprofile()
+				if bwprofile is not None:
+					ax_bba1bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bw limit')
 
 				#selected stream and rates
 				vlc_bba1rates_t = []
@@ -353,7 +346,7 @@ def plotCompareSessions(grouped_sessions, export=False):
 		#ax.set_ylabel('Scores')
 		ax.set_title(plot_dict['title'])
 		ax.set_xticks(ind+width)
-		xtickNames = ax.set_xticklabels([format_bw(s.bwprofile[0]) for s in grouped_sessions[0]['sessions']])
+		xtickNames = ax.set_xticklabels([format_bw(s.bwprofile.values()[0]) for s in grouped_sessions[0]['sessions']])
 		plt.setp(xtickNames, rotation=45, fontsize=10)
 
 		ax.legend([r[0] for r in rects], [s['algo'] for s in grouped_sessions], loc=2)
@@ -465,15 +458,12 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 
 		for stream in session.streams:
 			ax_bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
-		if len(session.bwprofile):
-			bwprofile = sorted(session.bwprofile.iteritems())
-			bwprofile.append((session.duration, bwprofile[-1][1]))
-			bwprofile_t = [t for t, v in bwprofile]
-			bwprofile_v = [v for t, v in bwprofile]
-			bwprofile_v = [bwprofile_v[0]] + bwprofile_v[:-1]
-			ax_bits.step(bwprofile_t, bwprofile_v, marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bandwidth limit')
+
+		bwprofile = session.get_bwprofile()
+		if bwprofile is not None:
+			ax_bits.step(bwprofile[0], bwprofile[1], marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bandwidth limit')
 			if details:
-				ax_bits.step(bwprofile_t, [v/len(session.VLClogs) for v in bwprofile_v], linestyle='--', color='purple', linewidth=thickness_factor/2, alpha=0.8)
+				ax_bits.step(bwprofile[0], [v/len(session.VLClogs) for v in bwprofile[1]], linestyle='--', color='purple', linewidth=thickness_factor/2, alpha=0.8)
 
 		j = 0
 		for VLClog in session.VLClogs:
