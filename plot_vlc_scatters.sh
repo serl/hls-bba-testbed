@@ -32,6 +32,18 @@ nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_50_classic_keepalive
 nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_50_bba0_keepalive_est.png tests/constant_two_con_bbb8_200ms_50%p/*_bba0_keepalive_est &
 nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_50_bba1_keepalive_est.png tests/constant_two_con_bbb8_200ms_50%p/*_bba1_keepalive_est &
 wait
+# Big Buck Bunny - 200ms RTT, 25%BDP buffer
+nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_25_classic_keepalive.png tests/constant_two_con_bbb8_200ms_25%p/*_classic-13_keepalive &
+nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_25_classic_keepalive_est.png tests/constant_two_con_bbb8_200ms_25%p/*_classic-13_keepalive_est &
+nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_25_bba0_keepalive_est.png tests/constant_two_con_bbb8_200ms_25%p/*_bba0_keepalive_est &
+nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_25_bba1_keepalive_est.png tests/constant_two_con_bbb8_200ms_25%p/*_bba1_keepalive_est &
+wait
+# Big Buck Bunny - 200ms RTT, 10%BDP buffer
+nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_10_classic_keepalive.png tests/constant_two_con_bbb8_200ms_10%p/*_classic-13_keepalive &
+nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_10_classic_keepalive_est.png tests/constant_two_con_bbb8_200ms_10%p/*_classic-13_keepalive_est &
+nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_10_bba0_keepalive_est.png tests/constant_two_con_bbb8_200ms_10%p/*_bba0_keepalive_est &
+nice python plot_vlc_scatters.py two_con_scatters_bbb_200ms_10_bba1_keepalive_est.png tests/constant_two_con_bbb8_200ms_10%p/*_bba1_keepalive_est &
+wait
 
 # BipBop
 nice python plot_vlc_scatters.py two_con_scatters_bipbop_200ms_classic_keepalive.png tests/constant_two_con_bipbop_200ms_200p/*_classic-2_keepalive &
