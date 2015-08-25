@@ -47,6 +47,12 @@ if __name__ == "__main__":
 			summary.unfairness = session.get_avg_unfairness()/1000
 			summary.general_unfairness = session.get_general_unfairness()/1000
 			summary.quality_unfairness = session.get_quality_unfairness()
+			summary.router_rate = None
+			try:
+				if len(session.bwprofile) == 1:
+					summary.router_rate = session.bandwidth_eth2_toclients.get_avg_rate()/session.bwprofile.values()[0]*100
+			except:
+				pass
 			summary.VLClogs = []
 			for VLClog in session.VLClogs:
 				VLCsummary = EmptyObject()

@@ -507,15 +507,12 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 
 	plt.close()
 
-def plotScatters(sessions_summary, export=False, export_big=False, thickness_factor=1, plot_instability=True, plot_unfairness=True, plot_general_unfairness=True, plot_quality_unfairness=True, tag_points=True, colorize=True):
+def plotScatters(sessions_summary, export=False, export_big=False, thickness_factor=1, plot_instability=True, plot_unfairness=False, plot_general_unfairness=True, plot_quality_unfairness=True, plot_router_rate=True, tag_points=True, colorize=True):
 	if export:
 		import matplotlib
 		matplotlib.use('Agg')
 	import matplotlib.pyplot as plt
 	from matplotlib.colors import LinearSegmentedColormap
-
-	fig = plt.figure()
-	plot_rows = 2 * (int(plot_instability) + int(plot_unfairness) + int(plot_general_unfairness) + int(plot_quality_unfairness)) + 1
 
 	tag_session = []
 	tag_player = []
@@ -532,6 +529,7 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 	unfairness = []
 	general_unfairness = []
 	quality_unfairness = []
+	router_rate = []
 	for summary in sessions_summary.sessions:
 		tag_session.append(summary.tag)
 		gamma_session.append(summary.gamma)
@@ -540,10 +538,12 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		mu_bitrate.append(summary.mu_bitrate)
 		fairshare_session.append(summary.fairshare)
 		lambda_session.append(summary.lambdap)
-		if plot_unfairness:
-			unfairness.append(summary.unfairness)
-			general_unfairness.append(summary.general_unfairness)
-			quality_unfairness.append(summary.quality_unfairness)
+		unfairness.append(summary.unfairness)
+		general_unfairness.append(summary.general_unfairness)
+		quality_unfairness.append(summary.quality_unfairness)
+		router_rate.append(summary.router_rate)
+		if summary.router_rate is None:
+			plot_router_rate = False
 		for VLCsummary in summary.VLClogs:
 			tag_player.append(summary.tag)
 			gamma_player.append(summary.gamma)
@@ -555,6 +555,9 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 	if not tag_points:
 		tag_session = []
 		tag_player = []
+
+	fig = plt.figure()
+	plot_rows = 2 * (int(plot_instability) + int(plot_unfairness) + int(plot_general_unfairness) + int(plot_quality_unfairness) + int(plot_router_rate)) + 1
 
 	cdict = {'red': ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)), 'green': ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0)), 'blue': ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0))}
 	cmap = LinearSegmentedColormap('Black', cdict)
@@ -685,6 +688,35 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		for i, tag in enumerate(tag_session):
 			ax_lambda_qunfairness.annotate(tag, (lambda_session[i], quality_unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_lambda_qunfairness.axis([0, None, 0, None])
+		row += 1
+
+	if plot_router_rate:
+		ax_gamma_rrate = plt.subplot2grid((plot_rows, 2), (row, 1))
+		ax_gamma_rrate.set_xlabel(r'$\gamma$', labelpad=0)
+		ax_gamma_rrate.set_ylabel('router output rate (%)')
+		ax_gamma_rrate.scatter(gamma_session, router_rate, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
+		for i, tag in enumerate(tag_session):
+			ax_gamma_rrate.annotate(tag, (gamma_session[i], router_rate[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
+		ax_gamma_rrate.axis([0, None, 0, None])
+		row += 1
+
+		ax_fairshare_rrate = plt.subplot2grid((plot_rows, 2), (row, 0))
+		ax_fairshare_rrate.set_xlabel('fair share (kbit/s)', labelpad=0)
+		ax_fairshare_rrate.set_ylabel('router output rate (%)')
+		ax_fairshare_rrate.scatter(fairshare_session, router_rate, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
+		for s in sessions_summary.streams:
+			ax_fairshare_rrate.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
+		for i, tag in enumerate(tag_session):
+			ax_fairshare_rrate.annotate(tag, (fairshare_session[i], router_rate[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
+		ax_fairshare_rrate.axis([0, None, 0, None])
+
+		ax_lambda_rrate = plt.subplot2grid((plot_rows, 2), (row, 1))
+		ax_lambda_rrate.set_xlabel(r'$\lambda$', labelpad=0)
+		ax_lambda_rrate.set_ylabel('router output rate (%)')
+		ax_lambda_rrate.scatter(lambda_session, router_rate, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
+		for i, tag in enumerate(tag_session):
+			ax_lambda_rrate.annotate(tag, (lambda_session[i], router_rate[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
+		ax_lambda_rrate.axis([0, None, 0, None])
 		row += 1
 
 	ax_gamma_mu_dry = plt.subplot2grid((plot_rows, 2), (row, 0))
