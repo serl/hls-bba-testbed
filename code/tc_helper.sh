@@ -66,8 +66,8 @@ function run_command {
 }
 
 function destroy {
-  echo "Deleting root qdisc"
-  run_command qdisc del root
+  run_command qdisc del root 2>&1 && \
+  echo "Deleted root qdisc"
 }
 
 function set_bw {
@@ -95,14 +95,14 @@ function set_bw {
     fi
   fi
 
-  echo "Adding/replacing netem qdisc with rate ${bw_bits}bits/s (buffer of $buffer packets$buffer_echo)"
-  run_command qdisc replace root netem rate "$bw_bits" limit "$buffer"
+  run_command qdisc replace root netem rate "$bw_bits" limit "$buffer" 2>&1 && \
+  echo "Added/replaced netem qdisc with rate ${bw_bits}bits/s (buffer of $buffer packets$buffer_echo)"
 }
 
 function set_delay {
   delay="$1"
-  echo "Adding/replacing netem qdisc with delay $delay"
-  run_command qdisc replace root netem delay "$delay"
+  run_command qdisc replace root netem delay "$delay" 2>&1 && \
+  echo "Added/replaced netem qdisc with delay $delay"
 }
 
 function show {
