@@ -28,9 +28,7 @@ def add_tcpdump(t):
 	t.add_event(TcpDump(host='bandwidth', iface='eth1'))
 	t.add_event(TcpDump(host='bandwidth', iface='eth2'))
 
-
-if __name__ == "__main__" and True:
-
+if __name__ == "__main__" and 'const' in sys.argv[1:]:
 	for buffer_size in (200, '2%', '5%', '10%', '25%', '50%', '100%'):
 		for rtt in ('200ms', '100ms', '400ms'):
 			algorithms = ('classic-13', 'bba0', 'bba1')
@@ -93,13 +91,13 @@ if __name__ == "__main__" and True:
 					num += 1
 
 
-if __name__ == "__main__" and True:
+if __name__ == "__main__" and 'var' in sys.argv[1:]:
 	rtt = '200ms'
 	buffer_size = 200
 	algorithms = ('classic-13', 'bba0', 'bba1')
-	bandwidths_coll = [
-		{0: '4000000', 120: '1000000', 240: '4000000', 360: '600000', 480: '4000000'},
-		{0: '4000000', 100: '2800000', 200: '1500000', 300: '1000000', 400: '600000', 500: '4000000'},
+	bandwidths_coll = [ # actually: fairshare - it will be multiplied by 2 for two-clients tests
+		{0: 4000000, 120: 1000000, 240: 4000000, 360: 600000, 480: 4000000},
+		{0: 4000000, 100: 2800000, 200: 1500000, 300: 1000000, 400: 600000, 500: 4000000},
 	]
 	num = 1
 	for bandwidths in bandwidths_coll:
@@ -122,7 +120,7 @@ if __name__ == "__main__" and True:
 			t.add_event(player1)
 			t.add_event(player2)
 			for d, bw in bandwidths.iteritems():
-				t.add_event(BwChange(delay=d, bw=bw, buffer_size=buffer_size, rtt=rtt))
+				t.add_event(BwChange(delay=d, bw=bw*2, buffer_size=buffer_size, rtt=rtt))
 			add_tcpdump(t)
 			t.generate_schedule()
 

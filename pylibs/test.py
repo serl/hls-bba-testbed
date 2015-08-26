@@ -55,7 +55,7 @@ class Test(object):
 
 bw_re = re.compile('^(\d+(\.\d+)?)(\w*)$')
 def bw_convert(bw): #read tc style, convert to bits/s (hope so)
-	match = bw_re.match(bw)
+	match = bw_re.match(str(bw))
 	if not match:
 		raise Exception('Malformed bandwidth, see tc docs.')
 	value = float(match.group(1))
