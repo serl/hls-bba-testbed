@@ -28,7 +28,8 @@ def add_tcpdump(t):
 	t.add_event(TcpDump(host='bandwidth', iface='eth1'))
 	t.add_event(TcpDump(host='bandwidth', iface='eth2'))
 
-if __name__ == "__main__":
+
+if __name__ == "__main__" and True:
 
 	for buffer_size in (200, '2%', '5%', '10%', '25%', '50%', '100%'):
 		for rtt in ('200ms', '100ms', '400ms'):
@@ -92,8 +93,44 @@ if __name__ == "__main__":
 					num += 1
 
 
-	sys.exit()
+if __name__ == "__main__" and True:
+	rtt = '200ms'
+	buffer_size = 200
+	algorithms = ('classic-13', 'bba0', 'bba1')
+	bandwidths_coll = [
+		{0: '4000000', 120: '1000000', 240: '4000000', 360: '600000', 480: '4000000'},
+		{0: '4000000', 100: '2800000', 200: '1500000', 300: '1000000', 400: '600000', 500: '4000000'},
+	]
+	num = 1
+	for bandwidths in bandwidths_coll:
+		collection = 'variable_single_bbb8_{0}_{1}p'.format(rtt, buffer_size)
+		for (algo, curl) in get_algocurl_tuples(algorithms, ('yes', 'bandwidth')):
+			player = Player(delay=1, host='client0', algo=algo, curl=curl, url=bigbuckbunny8_url, kill_after=700)
 
+			t = Test(name='v{0:02d}_single_bbb8_{1}_{2}'.format(num, algo, curl_signature(curl)), collection=collection, player=player, packet_delay=rtt)
+			for d, bw in bandwidths.iteritems():
+				t.add_event(BwChange(delay=d, bw=bw, buffer_size=buffer_size, rtt=rtt))
+			add_tcpdump(t)
+			t.generate_schedule()
+
+		collection = 'variable_two_con_bbb8_{0}_{1}p'.format(rtt, buffer_size)
+		for (algo, curl) in get_algocurl_tuples(algorithms, ('yes', 'bandwidth')):
+			player1 = Player(delay=1, host='client0', algo=algo, curl=curl, url=bigbuckbunny8_url, kill_after=700)
+			player2 = Player(delay=1, host='client1', algo=algo, curl=curl, url=bigbuckbunny8_url, kill_after=700)
+
+			t = Test(name='v{0:02d}_two_con_bbb8_{1}_{2}'.format(num, algo, curl_signature(curl)), collection=collection, packet_delay=rtt)
+			t.add_event(player1)
+			t.add_event(player2)
+			for d, bw in bandwidths.iteritems():
+				t.add_event(BwChange(delay=d, bw=bw, buffer_size=buffer_size, rtt=rtt))
+			add_tcpdump(t)
+			t.generate_schedule()
+
+		num += 1
+
+sys.exit()
+
+if False:
 	rtt = '200ms'
 	buffer_size = 200
 	algorithms = ('classic', 'bba0')
