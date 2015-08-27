@@ -461,15 +461,15 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 
 		bwprofile = session.get_bwprofile()
 		if bwprofile is not None:
-			ax_bits.step(bwprofile[0], bwprofile[1], marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bandwidth limit')
+			ax_bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bandwidth limit')
 			if details:
-				ax_bits.step(bwprofile[0], [v/len(session.VLClogs) for v in bwprofile[1]], linestyle='--', color='purple', linewidth=thickness_factor/2, alpha=0.8)
+				ax_bits.step(bwprofile[0], [v/len(session.VLClogs) for v in bwprofile[1]], where='post', linestyle='--', color='purple', linewidth=thickness_factor/2, alpha=0.8)
 
 		j = 0
 		for VLClog in session.VLClogs:
 			vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
 			stream_requests = [VLClog.streams[evt.downloading_stream] if (evt.downloading_stream is not None and evt.t in VLClog.http_requests) else None for evt in vlc_events]
-			ax_bits.step(vlc_t, stream_requests, where='post', label='stream requested (client {0})'.format(j+1), marker='+', markersize=6*thickness_factor, markeredgewidth=thickness_factor, linestyle='None', color=colors[j%len(colors)], alpha=0.7)
+			ax_bits.step(vlc_t, stream_requests, where='post', label='stream requested (client {0})'.format(j+1), marker='+', markersize=6*thickness_factor, markeredgewidth=thickness_factor, linestyle='None', color=colors[j%len(colors)], alpha=.7)
 			if details:
 				#bandwidth
 				#ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', linewidth=thickness_factor/2)
