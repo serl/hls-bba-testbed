@@ -465,24 +465,28 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 			if details:
 				ax_bits.step(bwprofile[0], [v/len(session.VLClogs) for v in bwprofile[1]], where='post', linestyle='--', color='purple', linewidth=thickness_factor/2, alpha=0.8)
 
-		j = 0
-		for VLClog in session.VLClogs:
+		VLClogs_len = len(session.VLClogs)
+		for VLClog_idx, VLClog in enumerate(session.VLClogs):
 			vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
+
+			for buffering in [e for e in vlc_events if e.buffering][1:]:
+				ymin = 1 - VLClog_idx * (1-.9) / VLClogs_len
+				ymax = 1 - (VLClog_idx+1) * (1-.9) / VLClogs_len
+				ax_bits.axvspan(buffering.t - session.start_time, buffering.end - session.start_time, ymin=ymin, ymax=ymax, alpha=.8, linewidth=0, color=colors[VLClog_idx%len(colors)])
+
 			stream_requests = [VLClog.streams[evt.downloading_stream] if (evt.downloading_stream is not None and evt.t in VLClog.http_requests) else None for evt in vlc_events]
-			ax_bits.step(vlc_t, stream_requests, where='post', label='stream requested (client {0})'.format(j+1), marker='+', markersize=6*thickness_factor, markeredgewidth=thickness_factor, linestyle='None', color=colors[j%len(colors)], alpha=.7)
+			ax_bits.step(vlc_t, stream_requests, where='post', label='stream requested (client {0})'.format(VLClog_idx+1), marker='+', markersize=6*thickness_factor, markeredgewidth=thickness_factor, linestyle='None', color=colors[VLClog_idx%len(colors)], alpha=.7)
 			if details:
 				#bandwidth
 				#ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', linewidth=thickness_factor/2)
 				if vlc_events[0].avg_bandwidth is not None:
-					ax_bits.step(vlc_t, [evt.avg_bandwidth for evt in vlc_events], where='post', color='#441e00', alpha=0.7, linewidth=thickness_factor/2)
-
-			j += 1
+					ax_bits.step(vlc_t, [evt.avg_bandwidth for evt in vlc_events], where='post', color=colors[VLClog_idx%len(colors)], alpha=.5, linewidth=thickness_factor/2)
 
 		if i == 0:
 			ax_bits.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=len(session.VLClogs)+1, mode="expand", borderaxespad=0.)
 
 		if details:
-			ax_bits.text(session.duration*.99, session.max_display_bits, 'gamma: {0:.2f}, mu: {1:.2f}, instability: {2:.1f}%'.format(session.get_fraction_oneidle(), session.get_fraction_both_overestimating(), VLClog.get_instability()), weight='semibold', ha='right')
+			ax_bits.text(.99, .01, 'gamma: {0:.2f}, mu: {1:.2f}, instability: {2:.1f}%'.format(session.get_fraction_oneidle(), session.get_fraction_both_overestimating(), VLClog.get_instability()), transform=ax_bits.transAxes, weight='semibold', ha='right')
 		ax_bits.axis([0, session.duration, 0, session.max_display_bits*1.1])
 		locs = ax_bits.get_yticks()
 		ax_bits.set_yticklabels(map("{0:.0f}".format, locs/1000))
