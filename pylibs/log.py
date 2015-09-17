@@ -141,6 +141,9 @@ class VLCLog(Log):
 			self._instability_cache = float(self.count_bitrate_changes(skip)) / len(self.composition[skip:]) * 100
 		return self._instability_cache
 
+	def get_buffering_fraction(self):
+		return sum([evt.end - evt.t for evt in self.events.values() if evt.buffering]) / self.duration * 100
+
 	@classmethod
 	def parse(cls, filename):
 		inst = cls()

@@ -32,4 +32,5 @@ if __name__ == "__main__":
 
 		print "Plotting {0}...".format(filename)
 		plotCompareVLCRuns(sessions, os.path.join('tests', sessions[0].collection, 'compare_runs_' + sessions[0].name + '.png') if export else False, thickness_factor=2, size=(12,9))
+		#plotCompareVLCRuns(sessions, os.path.join('tests', sessions[0].collection, 'compare_runs_' + sessions[0].name + '_pdf.png') if export else False, thickness_factor=2, size=(12,9))
 

@@ -439,7 +439,7 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 	plt.close()
 
 def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
-	details = True
+	details = False
 	if export:
 		import matplotlib
 		matplotlib.use('Agg')
@@ -461,9 +461,7 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 
 		bwprofile = session.get_bwprofile()
 		if bwprofile is not None:
-			ax_bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bandwidth limit')
-			if details:
-				ax_bits.step(bwprofile[0], [v/len(session.VLClogs) for v in bwprofile[1]], where='post', linestyle='--', color='purple', linewidth=thickness_factor/2, alpha=0.8)
+			ax_bits.step(bwprofile[0], [v/len(session.VLClogs) for v in bwprofile[1]], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bandwidth fair share')
 
 		VLClogs_len = len(session.VLClogs)
 		for VLClog_idx, VLClog in enumerate(session.VLClogs):
@@ -487,7 +485,10 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 
 		if details:
 			ax_bits.text(.99, .01, 'gamma: {0:.2f}, mu: {1:.2f}, instability: {2:.1f}%'.format(session.get_fraction_oneidle(), session.get_fraction_both_overestimating(), VLClog.get_instability()), transform=ax_bits.transAxes, weight='semibold', ha='right')
-		ax_bits.axis([0, session.duration, 0, session.max_display_bits*1.1])
+		if details:
+			ax_bits.axis([0, session.duration, 0, session.max_display_bits*1.1])
+		else:
+			ax_bits.axis([0, session.duration, 0, max(bwprofile[1])*1.1/len(session.VLClogs)])
 		locs = ax_bits.get_yticks()
 		ax_bits.set_yticklabels(map("{0:.0f}".format, locs/1000))
 
