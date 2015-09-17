@@ -6,4 +6,6 @@
 !/scripts/ssh/.gitkeep
 /code/http_server/static/*
 !/code/http_server/static/.gitkeep
+/tests/*
+!/tests/.gitkeep
 *.pyc
