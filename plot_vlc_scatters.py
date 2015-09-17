@@ -65,13 +65,13 @@ if __name__ == "__main__":
 		print "Plotting..."
 		plotScatters(sessions_summary, thickness_factor=2, tag_points=True)
 	else:
-		mkdir_p('scatterplots')
-		export_bw = os.path.join('scatterplots', export)
-		mkdir_p(os.path.join('scatterplots', 'tag'))
-		export_tag = os.path.join('scatterplots', 'tag', export.replace('.png', '_tag.png'))
-		export_big = os.path.join('scatterplots', 'tag', export.replace('.png', '_big.png'))
-		mkdir_p(os.path.join('scatterplots', 'color'))
-		export_color = os.path.join('scatterplots', 'color', export.replace('.png', '_color.png'))
+		mkdir_p('tests/scatterplots')
+		export_bw = os.path.join('tests/scatterplots', export)
+		mkdir_p(os.path.join('tests/scatterplots', 'tag'))
+		export_tag = os.path.join('tests/scatterplots', 'tag', export.replace('.png', '_tag.png'))
+		export_big = os.path.join('tests/scatterplots', 'tag', export.replace('.png', '_big.png'))
+		mkdir_p(os.path.join('tests/scatterplots', 'color'))
+		export_color = os.path.join('tests/scatterplots', 'color', export.replace('.png', '_color.png'))
 
 		print "Plotting {0} with tags...".format(export)
 		plotScatters(sessions_summary, export=export_tag, export_big=export_big, thickness_factor=2, tag_points=True)

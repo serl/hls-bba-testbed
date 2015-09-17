@@ -47,7 +47,7 @@ if __name__ == "__main__":
 	for index in ('buffering_fraction', 'avg_bitrate', 'avg_bitrate_ratio', 'avg_quality', 'instability', 'general_unfairness', 'quality_unfairness'):
 		result.append(sum([s.__dict__[index] for s in sessions_summary.sessions])/len(sessions_summary.sessions))
 
-	mkdir_p('QoE_metrics')
-	with open(os.path.join('QoE_metrics', label), 'w') as f:
+	mkdir_p('tests/QoE_metrics')
+	with open(os.path.join('tests/QoE_metrics', label), 'w') as f:
 		f.write("{0},{1}".format(label, ','.join(map(str, result))))
 
