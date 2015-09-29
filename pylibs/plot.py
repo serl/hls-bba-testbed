@@ -42,7 +42,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		subplot_rows += 1
 	if details:
 		for VLClog in session.VLClogs:
-			if VLClog.algorithm.startswith('bba1'):
+			if VLClog.algorithm.startswith('bba1') or VLClog.algorithm.startswith('bba2'):
 				subplot_rows += 2
 
 	for VLClog in session.VLClogs:
@@ -96,7 +96,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		i += 2
 
 		if details:
-			if VLClog.algorithm.startswith('bba1'):
+			if VLClog.algorithm.startswith('bba1') or VLClog.algorithm.startswith('bba2'):
 				#bba1 subplot
 				ax_bba1bits = plt.subplot2grid((subplot_rows, 1), (i, 0), rowspan=2, sharex=ax_bits)
 				ax_bba1bits.set_ylabel('(kbit/s)')
@@ -141,6 +141,16 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				for tl in ax_bba1buffer.get_yticklabels():
 					tl.set_color('blue')
 				ax_bba1buffer.axis([plot_start, plot_end, 0, None])
+
+				#bba2 debug infos
+				if VLClog.algorithm.startswith('bba2'):
+					startup_start = None
+					for evt in vlc_events:
+						if evt.bba2_status == 'startup' and startup_start is None:
+							startup_start = evt.t
+						if evt.bba2_status == 'steady' and startup_start is not None:
+							ax_bba1bits.axvspan(startup_start - session.start_time, evt.t - session.start_time, ymin=.9, ymax=1, alpha=.5, linewidth=0, color='green')
+							startup_start = None
 
 				i += 2
 
