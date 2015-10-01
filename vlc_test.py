@@ -31,7 +31,7 @@ if __name__ == "__main__" and 'const' in sys.argv[1:]:
 
 	video_url = bigbuckbunny8_url
 	kill_after = 700
-	algorithms = ('classic-13', 'bba0', 'bba1', 'bba2')
+	algorithms = ('classic-13', 'bba0', 'bba1', 'bba2', 'bba3')
 	fairshares_kbits = range(400, 3001, 100)
 	for buffer_size in (200, '10%', '25%', '50%', '100%'):
 		for rtt in ('200ms', '100ms', '400ms'):
@@ -67,7 +67,7 @@ if __name__ == "__main__" and 'const' in sys.argv[1:]:
 
 	video_url = bipbop_url
 	kill_after = 2000
-	algorithms = ('classic-2', 'bba0', 'bba1', 'bba2')
+	algorithms = ('classic-2', 'bba0', 'bba1', 'bba2', 'bba3')
 	fairshares_kbits = range(300, 2201, 100)
 	buffer_size = '200'
 	rtt = '200ms'
@@ -103,7 +103,7 @@ if __name__ == "__main__" and 'const' in sys.argv[1:]:
 if __name__ == "__main__" and 'var' in sys.argv[1:]:
 	rtt = '200ms'
 	buffer_size = 200
-	algorithms = ('classic-13', 'bba0', 'bba1', 'bba2')
+	algorithms = ('classic-13', 'bba0', 'bba1', 'bba2', 'bba3')
 	bandwidths_coll = [ # actually: fairshare - it will be multiplied by 2 for two-clients tests
 		{0: 4000000, 120: 1000000, 240: 4000000, 360: 600000, 480: 4000000},
 		{0: 4000000, 100: 2800000, 200: 1500000, 300: 1000000, 400: 600000, 500: 4000000},
