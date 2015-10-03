@@ -43,7 +43,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 	if details:
 		for VLClog in session.VLClogs:
 			if VLClog.algorithm.startswith('bba1') or VLClog.algorithm.startswith('bba2') or VLClog.algorithm.startswith('bba3'):
-				subplot_rows += 2
+				subplot_rows += 1
 
 	for VLClog in session.VLClogs:
 		ax_bits = plt.subplot2grid((subplot_rows, 1), (i, 0), rowspan=2, sharex=ax_bits)
@@ -54,7 +54,9 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			ax_bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
 		bwprofile = session.get_bwprofile()
 		if bwprofile is not None:
-			ax_bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bw limit')
+			ax_bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='total bandwidth')
+			if len(session.VLClogs) > 1:
+				ax_bits.step(bwprofile[0], [v/len(session.VLClogs) for v in bwprofile[1]], where='post', linestyle='--', alpha=.6, color='purple', linewidth=thickness_factor, label='bandwidth fair share')
 
 		#client data
 		vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
@@ -62,9 +64,9 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		for buffering in [e for e in vlc_events if e.buffering][1:]:
 			ax_bits.axvspan(buffering.t - session.start_time, buffering.end - session.start_time, alpha=0.8, linewidth=0, color='red')
 		#measured bandwidth
-		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', label='obtained bw', linewidth=thickness_factor)
+		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', label='obtained throughput', linewidth=thickness_factor)
 		if vlc_events[0].avg_bandwidth is not None and max([evt.avg_bandwidth for evt in vlc_events]) != 0:
-			ax_bits.step(vlc_t, [evt.avg_bandwidth for evt in vlc_events], where='post', color='#441e00', alpha=0.7, label='avg bw', linewidth=thickness_factor)
+			ax_bits.step(vlc_t, [evt.avg_bandwidth for evt in vlc_events], where='post', color='#441e00', alpha=0.7, label='average throughput', linewidth=thickness_factor)
 		#stream requested
 		stream_requests = [VLClog.streams[evt.downloading_stream] if evt.downloading_stream is not None else None for evt in vlc_events]
 		ax_bits.step(vlc_t, stream_requests, where='post', color='green', label='stream requested', linewidth=thickness_factor)
@@ -84,34 +86,32 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 		if details:
 			#avg bw, bitrate and instability
-			ax_buffer.text(.99, .01, 'avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s, avg quality: {2:.1f}%, instability: {3:.1f}%'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000, VLClog.get_avg_quality(), VLClog.get_instability()), transform=ax_buffer.transAxes, weight='semibold', ha='right')
+			ax_buffer.text(.99, .01, 'algorithm: {4}, avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s, avg quality: {2:.1f}%, instability: {3:.1f}%'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000, VLClog.get_avg_quality(), VLClog.get_instability(), VLClog.algorithm), transform=ax_buffer.transAxes, weight='semibold', ha='right')
 
-		if i == 0:
-			handles, labels = ax_bits.get_legend_handles_labels()
-			if details:
-				handles += [plt.Line2D((0,1),(0,0), color='red'), plt.Line2D((0,1),(0,0), color='gray')]
-				labels += ['cwnd', 'ssthresh']
-			ax_bits.legend(handles, labels, bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=6, mode="expand", borderaxespad=0.)
+		handles, labels = ax_bits.get_legend_handles_labels()
+		handles += [plt.Line2D((0,1),(0,0), alpha=0.4, color='black', linestyle='--'), plt.Line2D((0,1),(0,0), color='blue')]
+		labels += ['nominal bitrates', 'buffer size']
+		ax_bits.legend(handles, labels, fontsize='small').set_zorder(20)
 
 		i += 2
 
 		if details:
 			if VLClog.algorithm.startswith('bba1') or VLClog.algorithm.startswith('bba2') or VLClog.algorithm.startswith('bba3'):
 				#bba1 subplot
-				ax_bba1bits = plt.subplot2grid((subplot_rows, 1), (i, 0), rowspan=2, sharex=ax_bits)
+				ax_bba1bits = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
 				ax_bba1bits.set_ylabel('(kbit/s)')
 
-				for stream in session.streams:
+				for stream in (session.streams[0], session.streams[-1]):
 					ax_bba1bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
 
-				bwprofile = session.get_bwprofile()
-				if bwprofile is not None:
-					ax_bba1bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bw limit')
+				#bwprofile = session.get_bwprofile()
+				#if bwprofile is not None:
+				#	ax_bba1bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bw limit')
 
 				#selected stream and rates
 				vlc_bba1rates_t = []
 				vlc_bba1rates_v = []
-				vlc_bba1calcrate_v = []
+				#vlc_bba1calcrate_v = []
 				vlc_bba1stream_v = []
 				for vlc_evt_i, t in enumerate(vlc_t):
 					evt = vlc_events[vlc_evt_i]
@@ -119,95 +119,83 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 						continue
 					vlc_bba1rates_t.append(t)
 					vlc_bba1rates_v.append(evt.bba1_rates)
-					vlc_bba1calcrate_v.append(evt.bba1_calcrate)
+					#vlc_bba1calcrate_v.append(evt.bba1_calcrate)
 					vlc_bba1stream_v.append(evt.bba1_rates[evt.bba1_stream] if evt.bba1_stream is not None else None)
 
-				for r_id, _ in enumerate(vlc_bba1rates_v[0]):
+				#for r_id, _ in enumerate(vlc_bba1rates_v[0]):
+				bba1_rates_colors = ('#58D3F7', '#0080FF')
+				bba1_rates_labels = ('real bitrate, lowest quality', 'real bitrate, highest quality')
+				for r_id in (0, -1):
 					inst_rates = [rates[r_id] for rates in vlc_bba1rates_v]
-					ax_bba1bits.step(vlc_bba1rates_t, inst_rates, where='post', color='black', linewidth=thickness_factor)
-				ax_bba1bits.step(vlc_bba1rates_t, vlc_bba1calcrate_v, where='post', color='red', linewidth=thickness_factor)
-				ax_bba1bits.step(vlc_bba1rates_t, vlc_bba1stream_v, where='post', color='green', linewidth=thickness_factor)
+					ax_bba1bits.step(vlc_bba1rates_t, inst_rates, where='post', color=bba1_rates_colors[r_id], linewidth=thickness_factor, label=bba1_rates_labels[r_id])
+				#ax_bba1bits.step(vlc_bba1rates_t, vlc_bba1calcrate_v, where='post', color='red', linewidth=thickness_factor)
+				ax_bba1bits.step(vlc_bba1rates_t, vlc_bba1stream_v, where='post', color='green', linewidth=thickness_factor, label='real bitrate requested')
 
 				ax_bba1bits.axis([plot_start, plot_end, 0, None])
 				locs = ax_bba1bits.get_yticks()
 				ax_bba1bits.set_yticklabels(map("{0:.0f}".format, locs/1000))
 
-				#reservoir and buffer
-				ax_bba1buffer = ax_bba1bits.twinx()
-				ax_bba1buffer.step(vlc_t, [evt.buffer for evt in vlc_events], where='post', color='blue', linewidth=thickness_factor)
-				vlc_bba1reservoir_t, vlc_bba1reservoir_v = VLClog.get_events(time_relative_to=session, values_fn=lambda evt: evt.bba1_reservoir, filter_fn=lambda evt: hasattr(evt, 'bba1_reservoir'))
-				ax_bba1buffer.step(vlc_bba1reservoir_t, vlc_bba1reservoir_v, where='post', color='blue', linestyle='--', linewidth=thickness_factor)
-				ax_bba1buffer.set_ylabel('buffer (s)', color='blue')
-				for tl in ax_bba1buffer.get_yticklabels():
-					tl.set_color('blue')
-				ax_bba1buffer.axis([plot_start, plot_end, 0, None])
+				# reservoir and buffer
+				#ax_bba1buffer = ax_bba1bits.twinx()
+				#ax_bba1buffer.step(vlc_t, [evt.buffer for evt in vlc_events], where='post', color='blue', linewidth=thickness_factor)
+				#vlc_bba1reservoir_t, vlc_bba1reservoir_v = VLClog.get_events(time_relative_to=session, values_fn=lambda evt: evt.bba1_reservoir, filter_fn=lambda evt: hasattr(evt, 'bba1_reservoir'))
+				#ax_bba1buffer.step(vlc_bba1reservoir_t, vlc_bba1reservoir_v, where='post', color='blue', linestyle='--', linewidth=thickness_factor)
+				#ax_bba1buffer.set_ylabel('buffer (s)', color='blue')
+				#for tl in ax_bba1buffer.get_yticklabels():
+				#	tl.set_color('blue')
+				#ax_bba1buffer.axis([plot_start, plot_end, 0, None])
 
-				#bba2 debug infos
-				if VLClog.algorithm.startswith('bba2') or VLClog.algorithm.startswith('bba3'):
-					startup_start = None
-					for evt in vlc_events:
-						if evt.bba2_status == 'startup' and startup_start is None:
-							startup_start = evt.t
-						if evt.bba2_status == 'steady' and startup_start is not None:
-							ax_bba1bits.axvspan(startup_start - session.start_time, evt.t - session.start_time, ymin=.9, ymax=1, alpha=.5, linewidth=0, color='green')
-							startup_start = None
+				# bba2 debug infos
+				#if VLClog.algorithm.startswith('bba2') or VLClog.algorithm.startswith('bba3'):
+				#	startup_start = None
+				#	for evt in vlc_events:
+				#		if evt.bba2_status == 'startup' and startup_start is None:
+				#			startup_start = evt.t
+				#		if evt.bba2_status == 'steady' and startup_start is not None:
+				#			ax_bba1bits.axvspan(startup_start - session.start_time, evt.t - session.start_time, ymin=.9, ymax=1, alpha=.5, linewidth=0, color='green')
+				#			startup_start = None
 
-				i += 2
+				handles, labels = ax_bba1bits.get_legend_handles_labels()
+				handles += [plt.Line2D((0,1),(0,0), alpha=0.4, color='black', linestyle='--')]
+				labels += ['nominal bitrates']
+				ax_bba1bits.legend(handles, labels, fontsize='small')
+
+				i += 1
 
 			#cwnd subplot
 			ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
 			ax_packets.set_ylabel('(pkts)')
-			ax_msec = ax_packets.twinx()
-			ax_msec.set_ylabel('RTT (ms)', color='green')
-			#ax_bytes = ax_packets.twinx()
+			#ax_msec = ax_packets.twinx()
+			#ax_msec.set_ylabel('RTT (ms)', color='green')
 
 			#tcpprobe
 			for fourtuple, tcpp in VLClog.tcpprobe.split().iteritems():
 				tcpp_t, tcpp_events = tcpp.get_events(time_relative_to=session)
 				cwnd = [evt.snd_cwnd for evt in tcpp_events]
-				ax_packets.step(tcpp_t, cwnd, where='post', color='red', label='cwnd', linewidth=thickness_factor)
+				ax_packets.step(tcpp_t, cwnd, where='post', color='red', linewidth=thickness_factor)
 				ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
-				ax_packets.step(tcpp_t, ssthresh, where='post', color='gray', label='ssthresh', linewidth=thickness_factor)
-				rtt = [evt.srtt for evt in tcpp_events]
-				ax_msec.step(tcpp_t, rtt, color='green', alpha=0.5)
+				ax_packets.step(tcpp_t, ssthresh, where='post', color='gray', linewidth=thickness_factor)
+				#rtt = [evt.srtt for evt in tcpp_events]
+				#ax_msec.step(tcpp_t, rtt, color='green', alpha=0.5)
 
-				#inflight = [evt.inflight for evt in tcpp_events]
-				#ax_bytes.step(tcpp_t, inflight, where='post', color='yellow', label='in flight', linewidth=thickness_factor)
-
-				#sends = []
-				#cur_send_start = None
-				#for evt in tcpp_events:
-				#	if cur_send_start is None: #look for beginning
-				#		if evt.sending:
-				#			cur_send_start = evt.t
-				#	else: #look for end
-				#		if not evt.sending:
-				#			sends.append((cur_send_start, evt.t))
-				#			cur_send_start = None
-				#for send in sends:
-				#	ax_bytes.axvspan(send[0] - session.start_time, send[1] - session.start_time, alpha=0.2, linewidth=0, color='purple')
-
-			for tl in ax_msec.get_yticklabels():
-				tl.set_color('green')
+			#for tl in ax_msec.get_yticklabels():
+			#	tl.set_color('green')
 
 			for req_time in VLClog.http_requests:
 				ax_packets.axvline(req_time - session.start_time, alpha=0.8, linestyle=':', linewidth=thickness_factor, color='black')
 
-			#ax_bytes.set_ylabel('in flight (kB)', color='green')
-			#locs = ax_bytes.get_yticks()
-			#ax_bytes.set_yticklabels(map("{0:.0f}".format, locs/1000))
-			#for tl in ax_bytes.get_yticklabels():
-			#	tl.set_color('green')
-			#ax_bytes.axis([plot_start, plot_end, 0, None])
+			handles = [plt.Line2D((0,1),(0,0), color='red'), plt.Line2D((0,1),(0,0), color='gray'), plt.Line2D((0,1),(0,0), alpha=0.8, color='black', linestyle=':')]
+			labels = ['congestion window', 'slow start threshold', 'segment requests']
+			ax_packets.legend(handles, labels, fontsize='small')
 
 			i += 1
 
 	if details:
 		ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
-		ax_packets.set_ylabel('router buffer (pkts)')
+		ax_packets.set_ylabel('(pkts)')
 
 		#buffer
-		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, where='post', color='green', label='bw buffer', linewidth=thickness_factor)
+		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, where='post', color='#0B3B0B', alpha=.8, label='bottleneck router buffer', linewidth=thickness_factor)
 		#ax_packets.step(delay_buffer_t, delay_buffer_packets, where='post', color='purple', label='delay buffer', linewidth=thickness_factor)
 
 		ax_packets.axis([plot_start, plot_end, 0, None])
@@ -231,7 +219,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			avg_in_rate = '{0:.2f}kbit/s'.format(session.bandwidth_eth1_toclients.get_avg_rate()/1000)
 		except:
 			pass
-		ax_packets.text(.99, .02, 'avg total bw measured: {0:.1f}%, avg in rate: {1}, avg out rate: {2}, router idle: {3:.1f}%'.format(session.get_avg_total_measured(), avg_in_rate, avg_out_rate, session.get_avg_router_idle()), transform=ax_packets.transAxes, weight='semibold', ha='right')
+		ax_packets.text(.99, .02, 'avg in rate: {0}, avg out rate: {1}, time with empty buffer: {2:.1f}%'.format(avg_in_rate, avg_out_rate, session.get_avg_router_idle()), transform=ax_packets.transAxes, weight='semibold', ha='right')
 
 		try:
 			h_sampling_time = session.bandwidth_eth1_toclients.sampling_time/2
@@ -263,19 +251,26 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			#	tl.set_color('red')
 
 		except:
-			pass
+			raise
+
+		import matplotlib.patches as mpatches
+		handles, labels = ax_packets.get_legend_handles_labels()
+		handles += [mpatches.Patch(color='red', alpha=.5)]
+		labels += ['density of data from the server']
+		ax_packets.legend(handles, labels, fontsize='small')
 
 		i += 1
 
 	if len(session.VLClogs) == 2:
 		unfairness = session.get_unfairness()
 		ax_unfairness = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
-		ax_unfairness.set_ylabel('unfairness (kbit/s)', color='#550000')
-		ax_unfairness.step(unfairness.keys(), unfairness.values(), where='post', color='#550000', linewidth=thickness_factor)
+		ax_unfairness.set_ylabel('(kbit/s)')
+		ax_unfairness.step(unfairness.keys(), unfairness.values(), where='post', color='#550000', linewidth=thickness_factor, label='unfairness')
 		ax_unfairness.axis([plot_start, plot_end, 0, max(unfairness.values())*1.1])
 		ax_unfairness.text(.99, .02, 'avg unfairness: {0:.2f}kbit/s, general unfairness: {1:.2f}kbit/s, quality unfairness: {2:.1f}%'.format(session.get_avg_unfairness()/1000, session.get_general_unfairness()/1000, session.get_quality_unfairness()), transform=ax_unfairness.transAxes, color='#550000', weight='semibold', ha='right')
 		locs = ax_unfairness.get_yticks()
-		ax_unfairness.set_yticklabels(map("{0:.0f}".format, locs/1000), color='#550000')
+		ax_unfairness.set_yticklabels(map("{0:.0f}".format, locs/1000))
+		ax_unfairness.legend(fontsize='small')
 
 		i += 1
 
