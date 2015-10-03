@@ -79,7 +79,7 @@ if __name__ == "__main__" and 'const' in sys.argv[1:]:
 		for bw_kbits in fairshares_kbits:
 			bw = str(bw_kbits)+'kbit'
 			bwchange = BwChange(bw=bw, buffer_size=buffer_size, rtt=rtt)
-			t = Test(name='c{0:02d}_bipbop_{1}_{2}_{3}'.format(num, bw, algo, curl_signature(curl)), collection=collection, player=player, init_bw=bwchange, packet_delay=rtt)
+			t = Test(name='c{0:02d}_single_bipbop_{1}_{2}_{3}'.format(num, bw, algo, curl_signature(curl)), collection=collection, player=player, init_bw=bwchange, packet_delay=rtt)
 			add_tcpdump(t)
 			t.generate_schedule()
 			num += 1
