@@ -606,6 +606,24 @@ class TcpProbeLog(Log):
 		return inst
 
 class RouterBufferLog(Log):
+	def get_avg_queue_len(self):
+		last_t = None
+		last_value = None
+		wsum = 0.0
+		wlen = 0.0
+		for t, evt in sorted(self.events.iteritems()):
+			value = evt.packets[0]
+			if last_t is None:
+				last_t = t
+				last_value = value
+				continue
+			weight = t - last_t
+			wlen += weight
+			wsum += weight * last_value
+			last_t = t
+			last_value = value
+		return wsum/wlen
+
 	@classmethod
 	def parse(cls, filename):
 		inst = cls()
