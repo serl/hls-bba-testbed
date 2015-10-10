@@ -63,5 +63,5 @@ if __name__ == "__main__":
 
 	mkdir_p('tests/QoE_metrics')
 	with open(os.path.join('tests/QoE_metrics', label), 'w') as f:
-		f.write("{0},{1}".format(label, ','.join(map(str, result))))
+		f.write("{0},{1}\n".format(label, ','.join(map(str, result))))
 

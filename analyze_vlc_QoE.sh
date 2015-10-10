@@ -75,3 +75,7 @@ nice python analyze_vlc_QoE.py single_bipbop_200ms_200p_bba2_keepalive_est $TEST
 nice python analyze_vlc_QoE.py single_bipbop_200ms_200p_bba3_keepalive_est $TESTDIR/constant_single_bipbop_200ms_200p/c*_bba3_keepalive_est &
 wait
 
+echo "label,rebuffering_ratio,,avg_bitrate,,avg_relative_bitrate,,avg_quality_level,,instability,,link_utilization,,avg_router_queue_len" > $TESTDIR/QoE_metrics/single_all
+cat $TESTDIR/QoE_metrics/single_bipbop_200ms_200p_* $TESTDIR/QoE_metrics/single_bbb_100ms_200p_* $TESTDIR/QoE_metrics/single_bbb_200ms_200p_* $TESTDIR/QoE_metrics/single_bbb_400ms_200p_* $TESTDIR/QoE_metrics/single_bbb_200ms_100%_* $TESTDIR/QoE_metrics/single_bbb_200ms_50%_* $TESTDIR/QoE_metrics/single_bbb_200ms_25%_* $TESTDIR/QoE_metrics/single_bbb_200ms_10%_* >> $TESTDIR/QoE_metrics/single_all
+sed -i '/^$/d' $TESTDIR/QoE_metrics/single_all
+
