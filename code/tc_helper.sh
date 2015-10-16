@@ -113,6 +113,9 @@ function watch_buffer_size {
   oldline=''
   while true; do
     line=$("$0" show | grep backlog)
+    if [ -z "$line" ]; then
+      continue
+    fi
     if [ "$line" != "$oldline" ]; then
       echo $(date +%s.%N) $line
     fi
