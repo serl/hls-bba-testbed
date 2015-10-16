@@ -64,10 +64,10 @@ function check
 	rm -f $TMPFILE
 }
 
-check "constant" "single" "bbb8" "100ms_200p 200ms_200p 400ms_200p 200ms_100%p 200ms_50%p 200ms_25%p 200ms_10%p" "bba0_keepalive_est bba1_keepalive_est bba2_keepalive_est bba3_keepalive_est classic-13_keepalive classic-13_keepalive_est" 27 2
-check "constant" "two_con" "bbb8" "100ms_200p 200ms_200p 400ms_200p 200ms_100%p 200ms_50%p 200ms_25%p 200ms_10%p" "bba0_keepalive_est bba1_keepalive_est bba2_keepalive_est bba3_keepalive_est classic-13_keepalive classic-13_keepalive_est" 27 4
-check "constant" "single" "bipbop" "200ms_200p" "bba0_keepalive_est bba1_keepalive_est bba2_keepalive_est bba3_keepalive_est classic-2_keepalive classic-2_keepalive_est" 20 2
-check "constant" "two_con" "bipbop" "200ms_200p" "bba0_keepalive_est bba1_keepalive_est bba2_keepalive_est bba3_keepalive_est classic-2_keepalive classic-2_keepalive_est" 20 4
+check "constant" "single" "bbb8" "100ms_200p 200ms_200p 400ms_200p 200ms_100%p 200ms_50%p 200ms_25%p 200ms_10%p" "bba0_keepalive_est bba1_keepalive_est bba2_keepalive_est bba3_keepalive_est bba3-a_keepalive_est classic-13_keepalive classic-13_keepalive_est classic-119_keepalive classic-119_keepalive_est" 27 2
+check "constant" "two_con" "bbb8" "100ms_200p 200ms_200p 400ms_200p 200ms_100%p 200ms_50%p 200ms_25%p 200ms_10%p" "bba0_keepalive_est bba1_keepalive_est bba2_keepalive_est bba3_keepalive_est bba3-a_keepalive_est classic-13_keepalive classic-13_keepalive_est classic-119_keepalive classic-119_keepalive_est" 27 4
+check "constant" "single" "bipbop" "200ms_200p" "bba0_keepalive_est bba1_keepalive_est bba2_keepalive_est bba3_keepalive_est bba3-a_keepalive_est classic-2_keepalive classic-2_keepalive_est classic-23_keepalive classic-23_keepalive_est" 20 2
+check "constant" "two_con" "bipbop" "200ms_200p" "bba0_keepalive_est bba1_keepalive_est bba2_keepalive_est bba3_keepalive_est bba3-a_keepalive_est classic-2_keepalive classic-2_keepalive_est  classic-23_keepalive classic-23_keepalive_est" 20 4
 
 check "variable" "single" "bbb8" "200ms_200p" "bba0_keepalive_est bba1_keepalive_est bba2_keepalive_est bba3_keepalive_est classic-13_keepalive classic-13_keepalive_est" 2 2
 check "variable" "two_con" "bbb8" "200ms_200p" "bba0_keepalive_est bba1_keepalive_est bba2_keepalive_est bba3_keepalive_est classic-13_keepalive classic-13_keepalive_est" 2 4
