@@ -55,9 +55,9 @@ class Test(object):
 			with open(os.path.join(self.save_dir, self.collection, self.name, 'jobs.sched'), 'w') as f:
 				f.write(scheduler_commands)
 
-bw_re = re.compile('^(\d+(\.\d+)?)(\w*)$')
+num_unit_re = re.compile('^(\d+(\.\d+)?)(\w*)$')
 def bw_convert(bw): #read tc style, convert to bits/s (hope so)
-	match = bw_re.match(str(bw))
+	match = num_unit_re.match(str(bw))
 	if not match:
 		raise Exception('Malformed bandwidth, see tc docs.')
 	value = float(match.group(1))
@@ -73,6 +73,17 @@ def bw_convert(bw): #read tc style, convert to bits/s (hope so)
 	if unit == 'bit' or unit == '':
 		return int(value)
 	raise Exception('Malformed bandwidth, see tc docs.')
+def delay_convert(delay): #read tc style, convert to ms
+	match = num_unit_re.match(str(delay))
+	if not match:
+		raise Exception('Malformed delay, see tc docs.')
+	value = float(match.group(1))
+	unit = match.group(3).lower()
+	if unit == 's':
+		return int(value*1000)
+	if unit == 'ms':
+		return int(value)
+	raise Exception('Malformed delay, see tc docs.')
 
 class Event(object):
 	delay=0
@@ -124,7 +135,16 @@ class BwChange(Event):
 		return '{0} {1} /vagrant/code/tc_helper.sh set_bw {2} {3} {4}'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt)
 	def add_test_infos(self, test):
 		test.bw_profile[self.delay] = bw_convert(self.bw)
-		test.buffer_profile[self.delay] = self.buffer_size
+		try:
+			test.buffer_profile[self.delay] = int(self.buffer_size)
+		except ValueError:
+			percentage_re = re.compile('^(\d+)%$')
+			match = percentage_re.match(self.buffer_size)
+			if not match:
+				raise
+			percentage = int(match.group(1))
+			mss = 1500
+			test.buffer_profile[self.delay] = int(bw_convert(self.bw) * delay_convert(self.rtt) * percentage / 8 / mss / 100000)
 
 class DelayChange(Event):
 	packet_delay='200ms'
@@ -132,5 +152,5 @@ class DelayChange(Event):
 	def commands(self):
 		return '{0} {1} /vagrant/code/tc_helper.sh set_delay {2}'.format(self.host, self.delay, self.packet_delay)
 	def add_test_infos(self, test):
-		test.delay_profile[self.delay] = self.packet_delay
+		test.delay_profile[self.delay] = delay_convert(self.packet_delay)
 
