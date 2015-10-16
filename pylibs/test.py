@@ -9,6 +9,8 @@ class Test(object):
 		self.name = name
 		self.collection = collection
 		self.bw_profile = {}
+		self.buffer_profile = {}
+		self.delay_profile = {}
 		self.clients = []
 		self.log_cwnd = log_cwnd
 		self.log_routerbuffer = log_routerbuffer
@@ -44,7 +46,7 @@ class Test(object):
 		for evt in events:
 			scheduler_commands += evt.commands() + '\n'
 			evt.add_test_infos(self)
-		scheduler_commands = '#SESSION' + json.dumps({'name': self.name, 'collection': self.collection, 'bwprofile': self.bw_profile, 'clients': self.clients}) + '\n' + scheduler_commands
+		scheduler_commands = '#SESSION' + json.dumps({'name': self.name, 'collection': self.collection, 'bwprofile': self.bw_profile, 'buffer_profile': self.buffer_profile, 'delay_profile': self.delay_profile, 'clients': self.clients}) + '\n' + scheduler_commands
 
 		if echo:
 			print scheduler_commands
@@ -122,10 +124,13 @@ class BwChange(Event):
 		return '{0} {1} /vagrant/code/tc_helper.sh set_bw {2} {3} {4}'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt)
 	def add_test_infos(self, test):
 		test.bw_profile[self.delay] = bw_convert(self.bw)
+		test.buffer_profile[self.delay] = self.buffer_size
 
 class DelayChange(Event):
 	packet_delay='200ms'
 	host='delay'
 	def commands(self):
 		return '{0} {1} /vagrant/code/tc_helper.sh set_delay {2}'.format(self.host, self.delay, self.packet_delay)
+	def add_test_infos(self, test):
+		test.delay_profile[self.delay] = self.packet_delay
 
