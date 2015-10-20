@@ -23,6 +23,6 @@ for sessiondir in $sessiondirs; do
 			echo $rundir
 		fi
 	done
-done | nice parallel --gnu --eta -j5 python plot_vlc.py export
+done | nice parallel --gnu --eta -j10 python plot_vlc.py export
 echo "$? jobs failed."
 
