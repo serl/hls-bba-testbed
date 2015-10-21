@@ -125,7 +125,7 @@ function watch_buffer_size {
 }
 
 function usage {
-  echo "Usage: $0 {set_bw <bw> [buffer] [rtt]|set_delay <delay>|destroy|show|watch_buffer_size}"
+  echo "Usage: $0 {set_bw <bw> [max_buffer_size] [rtt]|set_delay <rtt>|destroy|show|watch_buffer_size}"
   exit 1
 }
 
