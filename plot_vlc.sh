@@ -5,6 +5,8 @@ if [ "$1" == "force" ]; then
 	shift
 fi
 
+shopt -s nullglob
+
 sessiondirs="$@"
 
 for sessiondir in $sessiondirs; do
@@ -15,6 +17,9 @@ for sessiondir in $sessiondirs; do
 	pushd $sessiondir >/dev/null || continue
 	runs=$(echo */)
 	popd >/dev/null
+	if [ -z "$runs" ]; then
+		continue
+	fi
 	for d in $runs; do
 		run=${d%/}
 		rundir=${sessiondir}/${run}
