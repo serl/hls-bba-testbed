@@ -1,4 +1,4 @@
-import sys, re, json, subprocess, os.path, traceback, collections
+import sys, re, json, subprocess, os.path, shutil, traceback, collections, tempfile, tarfile
 from parallelize import Parallelize
 
 class LogEvent(object):
@@ -472,12 +472,27 @@ class VLCSession(Session):
 	@classmethod
 	def parse(cls, dirname):
 		inst = cls()
+		dirname = dirname.rstrip(os.path.sep)
+
+		# decompress if needed
+		if not os.path.isdir(dirname) and dirname.endswith('.tar.gz'):
+			rundir = tempfile.mkdtemp()
+			tarfile.open(dirname, 'r').extractall(rundir)
+			remove_after = True
+			sched_file = os.path.join(os.path.dirname(dirname), 'jobs.sched')
+			inst.run = int(dirname.split(os.path.sep)[-1].split('.')[0])
+		else:
+			rundir = dirname
+			remove_after = False
+			sched_file = os.path.normpath(os.path.join(dirname, '..', 'jobs.sched'))
+			inst.run = int(dirname.split(os.path.sep)[-1])
+
 		funcs = []
-		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(dirname, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
+		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(rundir, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
 		for h in ('bandwidth', 'delay'):
-			funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(dirname, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
+			funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(rundir, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
 			for iface in ('eth1', 'eth2'):
-				toclients_file = os.path.join(dirname, 'dump_'+h+'_'+iface+'.pcap.toclients')
+				toclients_file = os.path.join(rundir, 'dump_'+h+'_'+iface+'.pcap.toclients')
 				if os.path.isfile(toclients_file):
 					funcs.append({'fn': TsharkPacketsToClients.parse, 'args': (toclients_file,), 'return_attr': h+'_'+iface+'_toclients'})
 
@@ -486,10 +501,6 @@ class VLCSession(Session):
 		inst.add_log(inst.bandwidth_buffer)
 		inst.add_log(inst.delay_buffer)
 
-		sched_file = os.path.join(dirname, 'jobs.sched')
-		if not os.path.isfile(sched_file):
-			sched_file = os.path.normpath(os.path.join(dirname, '..', 'jobs.sched'))
-			inst.run = dirname.rstrip(os.path.sep).split(os.path.sep)[-1]
 		session_re = re.compile('^#SESSION(.+)$')
 		with open(sched_file, "r") as contents:
 			for line in contents:
@@ -501,9 +512,11 @@ class VLCSession(Session):
 					inst.collection = session['collection']
 					inst.bwprofile = {int(k)+inst.bandwidth_buffer.start_time: v for k,v in session['bwprofile'].iteritems()}
 					inst.max_display_bits = max(inst.bwprofile.values())
+					inst.buffer_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['buffer_profile'].iteritems()}
+					inst.delay_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['delay_profile'].iteritems()}
 					inst.clients = session['clients']
 					for client in inst.clients:
-						log_filename = os.path.join(dirname, client['host'] + '_vlc.log')
+						log_filename = os.path.join(rundir, client['host'] + '_vlc.log')
 						try:
 							log = inst._addvlclog(log_filename)
 							log.tcpprobe = inst.tcpprobe.filter_by_ip(client['host'])
@@ -512,6 +525,8 @@ class VLCSession(Session):
 					continue
 
 				#skipping unknown lines
+		if remove_after: #cleanup if decompressed
+			shutil.rmtree(rundir)
 		return inst
 
 	def _addvlclog(self, filename):
@@ -540,12 +555,13 @@ class VLCSession(Session):
 
 class TcpProbeLog(Log):
 	def split(self):
-		instances = {}
-		for t, evt in self.events.iteritems():
-			if (evt.src, evt.src_port, evt.dst, evt.dst_port) not in instances:
-				instances[(evt.src, evt.src_port, evt.dst, evt.dst_port)] = self.__class__()
-			instances[(evt.src, evt.src_port, evt.dst, evt.dst_port)].events[t] = evt
-		return instances
+		if not hasattr(self, '_instances_cache'):
+			self._instances_cache = {}
+			for t, evt in self.events.iteritems():
+				if (evt.src, evt.src_port, evt.dst, evt.dst_port) not in self._instances_cache:
+					self._instances_cache[(evt.src, evt.src_port, evt.dst, evt.dst_port)] = self.__class__()
+				self._instances_cache[(evt.src, evt.src_port, evt.dst, evt.dst_port)].events[t] = evt
+		return self._instances_cache
 
 	def filter_by_ip(self, ip):
 		ip_re = re.compile('^\d+\.\d+\.\d+\.\d+$')
@@ -558,6 +574,9 @@ class TcpProbeLog(Log):
 		inst.events = {t: evt for t, evt in self.events.iteritems() if evt.dst == ip}
 		inst.adjust_time()
 		return inst
+
+	def get_avg_srtt(self):
+		return sum([evt.srtt for evt in self.events.values()]) / len(self.events)
 
 	@classmethod
 	def parse(cls, filename):

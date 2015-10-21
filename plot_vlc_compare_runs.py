@@ -19,7 +19,9 @@ if __name__ == "__main__":
 		while True:
 			runpath = os.path.join(filename, str(run))
 			if not os.path.isdir(runpath):
-				break
+				runpath += '.tar.gz'
+				if not os.path.isfile(runpath):
+					break
 			print "Reading {0} run {1}...".format(filename, run)
 			funcs.append({'args': (runpath,)})
 			run += 1

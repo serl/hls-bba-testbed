@@ -39,9 +39,11 @@ function check
 
 						for run in $(seq 1 $RUNS); do
 							rundir="$ptestdir/$run"
-							if [ ! -d $rundir ]; then
+							runtarfile="$ptestdir/$run.tar.gz"
+							if [ ! -d $rundir ] && [ ! -f $runtarfile ]; then
 								echo "Missing $rundir" >>"$TMPFILE"
-							else
+							fi
+							if [ -d $rundir ]; then
 								filesize=$(stat --printf="%s" $rundir/client0_vlc.log)
 								if [ "$filesize" -lt 10000 ]; then
 									echo $rundir corrupted

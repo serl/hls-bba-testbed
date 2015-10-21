@@ -15,7 +15,7 @@ for sessiondir in $sessiondirs; do
 		continue
 	fi
 	pushd $sessiondir >/dev/null || continue
-	runs=$(echo */)
+	runs=$(echo */ *.tar.gz)
 	popd >/dev/null
 	if [ -z "$runs" ]; then
 		continue

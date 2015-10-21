@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, os.path
 from pylibs.log import VLCSession
 from pylibs.plot import plotScatters
 from pylibs.parallelize import Parallelize
@@ -23,7 +23,9 @@ if __name__ == "__main__":
 		while True:
 			runpath = os.path.join(filename, str(run))
 			if not os.path.isdir(runpath):
-				break
+				runpath += '.tar.gz'
+				if not os.path.isfile(runpath):
+					break
 			print "Reading {0} run {1}...".format(filename, run)
 			funcs.append({'args': (runpath,)})
 			run += 1
@@ -61,22 +63,23 @@ if __name__ == "__main__":
 
 			sessions_summary.sessions.append(summary)
 
-	if not export:
-		print "Plotting..."
-		plotScatters(sessions_summary, thickness_factor=2, tag_points=True)
-	else:
-		mkdir_p('tests/scatterplots')
-		export_bw = os.path.join('tests/scatterplots', export)
-		mkdir_p(os.path.join('tests/scatterplots', 'tag'))
-		export_tag = os.path.join('tests/scatterplots', 'tag', export.replace('.png', '_tag.png'))
-		export_big = os.path.join('tests/scatterplots', 'tag', export.replace('.png', '_big.png'))
-		mkdir_p(os.path.join('tests/scatterplots', 'color'))
-		export_color = os.path.join('tests/scatterplots', 'color', export.replace('.png', '_color.png'))
+	if len(sessions_summary.sessions):
+		if not export:
+			print "Plotting..."
+			plotScatters(sessions_summary, thickness_factor=2, tag_points=True)
+		else:
+			mkdir_p('tests/scatterplots')
+			export_bw = os.path.join('tests/scatterplots', export)
+			mkdir_p(os.path.join('tests/scatterplots', 'tag'))
+			export_tag = os.path.join('tests/scatterplots', 'tag', export.replace('.png', '_tag.png'))
+			export_big = os.path.join('tests/scatterplots', 'tag', export.replace('.png', '_big.png'))
+			mkdir_p(os.path.join('tests/scatterplots', 'color'))
+			export_color = os.path.join('tests/scatterplots', 'color', export.replace('.png', '_color.png'))
 
-		print "Plotting {0} with tags...".format(export)
-		plotScatters(sessions_summary, export=export_tag, export_big=export_big, thickness_factor=2, tag_points=True)
-		print "Plotting {0} without tags...".format(export)
-		plotScatters(sessions_summary, export=export_color, thickness_factor=2, tag_points=False)
-		print "Plotting {0} without colors...".format(export)
-		plotScatters(sessions_summary, export=export_bw, thickness_factor=2, tag_points=False, colorize=False)
+			print "Plotting {0} with tags...".format(export)
+			plotScatters(sessions_summary, export=export_tag, export_big=export_big, thickness_factor=2, tag_points=True)
+			print "Plotting {0} without tags...".format(export)
+			plotScatters(sessions_summary, export=export_color, thickness_factor=2, tag_points=False)
+			print "Plotting {0} without colors...".format(export)
+			plotScatters(sessions_summary, export=export_bw, thickness_factor=2, tag_points=False, colorize=False)
 

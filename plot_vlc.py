@@ -1,7 +1,8 @@
-import sys, os
-#from os.path import dirname
+import sys, os, os.path, re
 from pylibs.log import VLCSession
 from pylibs.plot import plotSession
+
+targz_re = re.compile('^(\d+).tar.gz$')
 
 if __name__ == "__main__":
 	filenames = sys.argv[1:]
@@ -14,10 +15,15 @@ if __name__ == "__main__":
 	for filename in filenames:
 		filename = filename.rstrip(os.sep)
 		run = ''
+		last_path_part = filename.split(os.sep)[-1]
 		try:
-			run = '_' + str(int(filename.split(os.sep)[-1]))
+			run = '_' + str(int(last_path_part))
 		except:
-			pass
+			match = targz_re.match(last_path_part)
+			try:
+				run = '_' + match.group(1)
+			except:
+				pass
 		try:
 			#print "Reading {0}...".format(filename)
 			session = VLCSession.parse(filename)
@@ -28,6 +34,6 @@ if __name__ == "__main__":
 			#plotSession(session, os.path.join('tests', session.collection, session.name + run + '_pdf.png'), plot_size=(18,5), thickness_factor=2, details=False)
 			#plotSession(session, os.path.join('tests', session.collection, session.name + run + '_detail.png'), details=False, plot_start=450, plot_end=700, plot_size=(11,7), thickness_factor=2)
 		except:
-			print "for file {}".format(filename)
+			print "for run {}".format(filename)
 			raise
 
