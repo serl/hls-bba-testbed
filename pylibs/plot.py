@@ -409,8 +409,6 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 		tl.set_color('green')
 	ax_msec.axis([plot_start, plot_end, min(rtt)*0.8, max(rtt)*1.2])
 
-	ax_packets.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=4, mode="expand", borderaxespad=0.)
-
 	bw_text = ''
 	for h in ('sender', 'receiver'):
 		plot_id += 1
@@ -438,6 +436,11 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 
 	if bw_text is not '':
 		ax_msec.text(plot_end, max(rtt)*1.2, bw_text, ha='right')
+
+	handles, labels = ax_packets.get_legend_handles_labels()
+	handles += [plt.Line2D((0,1),(0,0), alpha=0.7, color='green')]
+	labels += ['RTT']
+	ax_packets.legend(handles, labels, fontsize='small')
 
 	show(plt, session, fig, export, plot_size)
 
