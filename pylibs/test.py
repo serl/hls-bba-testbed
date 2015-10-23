@@ -145,6 +145,8 @@ class BwChange(Event):
 			percentage = int(match.group(1))
 			mss = 1500
 			test.buffer_profile[self.delay] = int(bw_convert(self.bw) * delay_convert(self.rtt) * percentage / 8 / mss / 100000)
+		if test.buffer_profile[self.delay] <= 0:
+			test.buffer_profile[self.delay] = 1
 
 class DelayChange(Event):
 	packet_delay='200ms'

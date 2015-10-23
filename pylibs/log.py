@@ -662,9 +662,9 @@ class RouterBufferLog(Log):
 						bytes.append(m.group(1))
 						packets.append(int(m.group(2)))
 						requeues.append(int(m.group(3)))
-					#evt.bytes = tuple(bytes)
-					evt.packets = tuple(packets)
-					#evt.requeues = tuple(requeues)
+					#evt.bytes = bytes[-1]
+					evt.packets = packets[-1]
+					#evt.requeues = requeues[-1]
 					inst.events[evt.t] = evt
 					continue
 		inst.adjust_time()
