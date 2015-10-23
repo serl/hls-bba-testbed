@@ -20,10 +20,10 @@ for sessiondir in $sessiondirs; do
 	if [ -z "$runs" ]; then
 		continue
 	fi
-	for run in $runs; do
-		run=${run%/}
+	for d in $runs; do
+		run=${d%/}
 		run=${run%.tar.gz}
-		rundir=${sessiondir}/${run}
+		rundir=${sessiondir}/${d}
 		png_path=${sessiondir}_${run}.png
 		if [ "$force" == "1" ] || [ ! -f "$png_path" ]; then
 			echo $rundir

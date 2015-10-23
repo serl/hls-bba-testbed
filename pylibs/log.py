@@ -341,8 +341,7 @@ class VLCSession(Session):
 		total = len(self.bandwidth_buffer.events)
 		count = 0.0
 		for t, evt in self.bandwidth_buffer.events.iteritems():
-			packets = evt.packets[0]
-			if packets == 0:
+			if evt.packets == 0:
 				count += 1
 		return count/total*100
 
@@ -631,7 +630,7 @@ class RouterBufferLog(Log):
 		wsum = 0.0
 		wlen = 0.0
 		for t, evt in sorted(self.events.iteritems()):
-			value = evt.packets[0]
+			value = evt.packets
 			if last_t is None:
 				last_t = t
 				last_value = value
