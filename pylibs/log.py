@@ -661,6 +661,7 @@ class RouterBufferLog(Log):
 						bytes.append(m.group(1))
 						packets.append(int(m.group(2)))
 						requeues.append(int(m.group(3)))
+					assert len(packets)
 					#evt.bytes = bytes[-1]
 					evt.packets = packets[-1]
 					#evt.requeues = requeues[-1]
