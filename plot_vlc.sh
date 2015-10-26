@@ -5,6 +5,11 @@ if [ "$1" == "force" ]; then
 	shift
 fi
 
+if [ -z "$1" -o ! -d "$1" ]; then
+	echo "Usage: $0 <sessiondir> [sessiondir...]"
+	exit 1
+fi
+
 shopt -s nullglob
 
 sessiondirs="$@"
