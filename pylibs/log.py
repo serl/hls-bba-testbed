@@ -475,8 +475,12 @@ class VLCSession(Session):
 
 		# decompress if needed
 		if not os.path.isdir(dirname) and dirname.endswith('.tar.gz'):
-			rundir = tempfile.mkdtemp()
-			tarfile.open(dirname, 'r').extractall(rundir)
+			rundir = tempfile.mkdtemp(prefix='hbt_unpack_')
+			try:
+				tarfile.open(dirname, 'r').extractall(rundir)
+			except:
+				shutil.rmtree(rundir)
+				raise
 			remove_after = True
 			sched_file = os.path.join(os.path.dirname(dirname), 'jobs.sched')
 			inst.run = int(dirname.split(os.path.sep)[-1].split('.')[0])
@@ -486,46 +490,48 @@ class VLCSession(Session):
 			sched_file = os.path.normpath(os.path.join(dirname, '..', 'jobs.sched'))
 			inst.run = int(dirname.split(os.path.sep)[-1])
 
-		funcs = []
-		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(rundir, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
-		for h in ('bandwidth', 'delay'):
-			funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(rundir, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
-			for iface in ('eth1', 'eth2'):
-				toclients_file = os.path.join(rundir, 'dump_'+h+'_'+iface+'.pcap.toclients')
-				if os.path.isfile(toclients_file):
-					funcs.append({'fn': TsharkPacketsToClients.parse, 'args': (toclients_file,), 'return_attr': h+'_'+iface+'_toclients'})
+		try:
+			funcs = []
+			funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(rundir, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
+			for h in ('bandwidth', 'delay'):
+				funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(rundir, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
+				for iface in ('eth1', 'eth2'):
+					toclients_file = os.path.join(rundir, 'dump_'+h+'_'+iface+'.pcap.toclients')
+					if os.path.isfile(toclients_file):
+						funcs.append({'fn': TsharkPacketsToClients.parse, 'args': (toclients_file,), 'return_attr': h+'_'+iface+'_toclients'})
 
-		Parallelize(funcs, return_obj=inst).run()
-		inst.add_log(inst.tcpprobe)
-		inst.add_log(inst.bandwidth_buffer)
-		inst.add_log(inst.delay_buffer)
+			Parallelize(funcs, return_obj=inst).run()
+			inst.add_log(inst.tcpprobe)
+			inst.add_log(inst.bandwidth_buffer)
+			inst.add_log(inst.delay_buffer)
 
-		session_re = re.compile('^#SESSION(.+)$')
-		with open(sched_file, "r") as contents:
-			for line in contents:
-				#session line
-				match = session_re.match(line)
-				if match:
-					session = json.loads(match.group(1))
-					inst.name = session['name']
-					inst.collection = session['collection']
-					inst.bwprofile = {int(k)+inst.bandwidth_buffer.start_time: v for k,v in session['bwprofile'].iteritems()}
-					inst.max_display_bits = max(inst.bwprofile.values())
-					inst.buffer_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['buffer_profile'].iteritems()}
-					inst.delay_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['delay_profile'].iteritems()}
-					inst.clients = session['clients']
-					for client in inst.clients:
-						log_filename = os.path.join(rundir, client['host'] + '_vlc.log')
-						try:
-							log = inst._addvlclog(log_filename)
-							log.tcpprobe = inst.tcpprobe.filter_by_ip(client['host'])
-						except Exception, e:
-							print traceback.format_exc()
-					continue
+			session_re = re.compile('^#SESSION(.+)$')
+			with open(sched_file, "r") as contents:
+				for line in contents:
+					#session line
+					match = session_re.match(line)
+					if match:
+						session = json.loads(match.group(1))
+						inst.name = session['name']
+						inst.collection = session['collection']
+						inst.bwprofile = {int(k)+inst.bandwidth_buffer.start_time: v for k,v in session['bwprofile'].iteritems()}
+						inst.max_display_bits = max(inst.bwprofile.values())
+						inst.buffer_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['buffer_profile'].iteritems()}
+						inst.delay_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['delay_profile'].iteritems()}
+						inst.clients = session['clients']
+						for client in inst.clients:
+							log_filename = os.path.join(rundir, client['host'] + '_vlc.log')
+							try:
+								log = inst._addvlclog(log_filename)
+								log.tcpprobe = inst.tcpprobe.filter_by_ip(client['host'])
+							except Exception, e:
+								print traceback.format_exc()
+						continue
 
-				#skipping unknown lines
-		if remove_after: #cleanup if decompressed
-			shutil.rmtree(rundir)
+					#skipping unknown lines
+		finally:
+			if remove_after: #cleanup if decompressed
+				shutil.rmtree(rundir)
 		return inst
 
 	def _addvlclog(self, filename):
@@ -661,7 +667,8 @@ class RouterBufferLog(Log):
 						bytes.append(m.group(1))
 						packets.append(int(m.group(2)))
 						requeues.append(int(m.group(3)))
-					assert len(packets)
+					if not len(packets):
+						continue
 					#evt.bytes = bytes[-1]
 					evt.packets = packets[-1]
 					#evt.requeues = requeues[-1]
