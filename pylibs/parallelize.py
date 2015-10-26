@@ -13,9 +13,15 @@ class AsyncFunction(object):
 		self._process = None
 
 	def _call(self, conn):
-		result = self.fn(*self.args, **self.kwargs)
-		conn.send(result)
-		conn.close()
+		result = None
+		exception = None
+		try:
+			result = self.fn(*self.args, **self.kwargs)
+		except Exception as e:
+			exception = e
+		finally:
+			conn.send((result, exception))
+			conn.close()
 
 	def run(self):
 		self._conn, child_conn = Pipe(duplex=False)
@@ -24,12 +30,18 @@ class AsyncFunction(object):
 
 	def poll(self, timeout=0):
 		if self._conn.poll(timeout):
-			self.result = self._conn.recv()
+			self.result, exception = self._conn.recv()
+			if exception is not None:
+				raise exception
 			if self.return_obj is not None and self.return_attr is not None:
 				self.return_obj.__dict__[self.return_attr] = self.result
 			self._process.join()
 			return True
 		return False
+
+	def terminate(self):
+		if self._process.is_alive():
+			self._process.terminate()
 
 class Parallelize(object):
 	def __init__(self, collection, **kwargs):
@@ -45,9 +57,13 @@ class Parallelize(object):
 			fn.run()
 		while done is not len(self._functions):
 			for idx, fn in enumerate(self._functions):
-				if fn.poll(polltime):
-					self.results[idx] = fn.result
-					done += 1
+				try:
+					if fn.poll(polltime):
+						self.results[idx] = fn.result
+						done += 1
+				except:
+					[fn.terminate() for fn in self._functions]
+					raise
 
 if __name__ == '__main__':
 	def sleepy(t):
