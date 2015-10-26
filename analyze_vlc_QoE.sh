@@ -25,6 +25,7 @@ for algo in classic-13_keepalive classic-13_keepalive_est classic-119_keepalive 
 		done
 	done
 done | parallel --gnu --eta -j5
+echo
 echo "$? jobs failed."
 
 
@@ -38,6 +39,7 @@ for algo in classic-2_keepalive classic-2_keepalive_est classic-23_keepalive cla
 		fi
 	done
 done | parallel --gnu --eta -j1
+echo
 echo "$? jobs failed."
 
 

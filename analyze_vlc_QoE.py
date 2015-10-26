@@ -1,19 +1,16 @@
-import sys, os, os.path, math
+import sys, os, os.path
 from pylibs.log import VLCSession
 from pylibs.parallelize import Parallelize
-from pylibs.generic import mkdir_p
-from scipy.stats import t
+from pylibs.generic import mkdir_p, mean_confidence, PlainObject
 import numpy as np
-
-class EmptyObject(object): pass
 
 if __name__ == "__main__":
 	outfile = sys.argv[1]
 	filenames = sys.argv[2:]
 	assert len(filenames)
 
-	sessions_summary = EmptyObject()
-	sessions_summary.sessions = []
+	sessions_summary = PlainObject()
+	sessions_summary.runs = []
 	for filename in filenames:
 		try:
 			filename = filename.rstrip(os.sep)
@@ -34,9 +31,9 @@ if __name__ == "__main__":
 				#print "No runs in {0}".format(filename)
 				continue
 			#print "Analyzing {0}...".format(filename)
-			for session in p.results:
+			for i, session in enumerate(p.results):
 				for VLClog in session.VLClogs:
-					summary = EmptyObject()
+					summary = PlainObject()
 					summary.buffering_fraction = VLClog.get_buffering_fraction()
 					summary.avg_bitrate = VLClog.get_avg_bitrate()
 					summary.avg_bitrate_ratio = summary.avg_bitrate/session.get_fairshare()*100
@@ -60,24 +57,26 @@ if __name__ == "__main__":
 						summary.general_unfairness = session.get_general_unfairness()
 						summary.quality_unfairness = session.get_quality_unfairness()
 
-					sessions_summary.sessions.append(summary)
+					if len(sessions_summary.runs) < i+1:
+						sessions_summary.runs.append([])
+					sessions_summary.runs[i].append(summary)
 		except:
 			print "in {}".format(filename)
 			raise
 
 	result = []
 	for index in ('buffering_fraction', 'avg_bitrate', 'avg_bitrate_ratio', 'avg_quality', 'instability', 'link_utilization', 'avg_router_queue_len', 'avg_relative_router_queue_len', 'avg_relative_rtt', 'general_unfairness', 'quality_unfairness'):
-		try:
-			values = np.array([s.__dict__[index] for s in sessions_summary.sessions])
-		except:
-			#print "{0} not present.".format(index)
-			continue
-		mean = values.mean()
-		#confidence = t.interval(0.95, values.size-1, loc=mean, scale=values.std()/math.sqrt(values.size))
-		h = values.std() / math.sqrt(values.size) * t.ppf((1+0.95)/2., values.size-1)
-		result.extend((mean, h))
+		run_means = []
+		for run in sessions_summary.runs:
+			try:
+				run_means.append(np.array([s.__dict__[index] for s in run]).mean())
+			except KeyError:
+				continue
+		if len(run_means):
+			result.extend(mean_confidence(run_means))
 
-	mkdir_p(os.path.dirname(outfile))
+	if os.path.dirname(outfile) is not '':
+		mkdir_p(os.path.dirname(outfile))
 	with open(outfile, 'w') as f:
 		f.write("{0},{1}\n".format(os.path.basename(outfile), ','.join(map(str, result))))
 
