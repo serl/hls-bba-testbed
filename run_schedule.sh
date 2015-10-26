@@ -59,7 +59,7 @@ if [ "$mailaddress" ]; then
 	echo "" | mail -s "Tests ran on $SCRIPTPATH" "$mailaddress"
 fi
 
-if [ "$dry_run" == "false" ]; then
+if [ "$dry_run" == "false" ] && [ ! -f "$SCRIPTPATH/.noreload" ]; then
 	vagrant halt
 fi
 
