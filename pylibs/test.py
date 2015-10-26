@@ -1,5 +1,5 @@
 import os, re, json, errno, string, random
-from generic import mkdir_p
+from generic import mkdir_p, is_percentage
 
 class Test(object):
 	save_dir = 'tests'
@@ -84,6 +84,18 @@ def delay_convert(delay): #read tc style, convert to ms
 	if unit == 'ms':
 		return int(value)
 	raise Exception('Malformed delay, see tc docs.')
+def router_buffer_convert(buffer_size, bw, rtt, mss=1500):
+	try:
+		real_size = int(buffer_size)
+	except ValueError:
+		percentage = is_percentage(buffer_size)
+		if percentage is False:
+			raise
+		real_size = int(bw_convert(bw) * delay_convert(rtt) * percentage / 8 / mss / 100000)
+	if real_size <= 0:
+		return 1
+	return real_size
+
 
 class Event(object):
 	delay=0
@@ -135,18 +147,7 @@ class BwChange(Event):
 		return '{0} {1} /vagrant/code/tc_helper.sh set_bw {2} {3} {4}'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt)
 	def add_test_infos(self, test):
 		test.bw_profile[self.delay] = bw_convert(self.bw)
-		try:
-			test.buffer_profile[self.delay] = int(self.buffer_size)
-		except ValueError:
-			percentage_re = re.compile('^(\d+)%$')
-			match = percentage_re.match(self.buffer_size)
-			if not match:
-				raise
-			percentage = int(match.group(1))
-			mss = 1500
-			test.buffer_profile[self.delay] = int(bw_convert(self.bw) * delay_convert(self.rtt) * percentage / 8 / mss / 100000)
-		if test.buffer_profile[self.delay] <= 0:
-			test.buffer_profile[self.delay] = 1
+		test.buffer_profile[self.delay] = router_buffer_convert(self.buffer_size, self.bw, self.rtt)
 
 class DelayChange(Event):
 	packet_delay='200ms'

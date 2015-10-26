@@ -1,5 +1,5 @@
 import sys, os, os.path
-from pylibs.log import VLCSession
+from pylibs.log import Session
 from pylibs.parallelize import Parallelize
 from pylibs.generic import mkdir_p, mean_confidence, PlainObject
 import numpy as np
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 				#print "Reading {0} run {1}...".format(filename, run)
 				funcs.append({'args': (runpath,)})
 				run += 1
-			p = Parallelize(funcs, fn=VLCSession.parse)
+			p = Parallelize(funcs, fn=Session.read)
 			p.run()
 			if len(p.results) == 0:
 				#print "No runs in {0}".format(filename)

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#TODO should be called 'autopngplotter' or something and should use pylibs/autoplot.py
+
 if [ "$1" == "force" ]; then
 	force=1
 	shift

@@ -1,5 +1,5 @@
 import sys
-from pylibs.log import VLCSession
+from pylibs.log import Session
 from pylibs.plot import plotCompareSessions
 
 def algo_key(algo):
@@ -17,7 +17,7 @@ if __name__ == "__main__":
 		filenames = sys.argv[2:]
 		export = 'comparison.svg'
 
-	sessions = [VLCSession.parse(f) for f in filenames]
+	sessions = [Session.read(f) for f in filenames]
 	sessions.sort(key=lambda s: (s.bwprofile[0], algo_key(s.VLClogs[0].algorithm)))
 	sessions_by_algo = []
 	for s in sessions:

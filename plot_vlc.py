@@ -1,8 +1,10 @@
 import sys, os, os.path, re
-from pylibs.log import VLCSession
+from pylibs.log import Session
 from pylibs.plot import plotSession
 
 targz_re = re.compile('^(\d+).tar.gz$')
+
+#TODO should be substituted by pylibs/autoplot.py
 
 if __name__ == "__main__":
 	filenames = sys.argv[1:]
@@ -26,7 +28,7 @@ if __name__ == "__main__":
 				pass
 		try:
 			#print "Reading {0}...".format(filename)
-			session = VLCSession.parse(filename)
+			session = Session.read(filename)
 			#print "Plotting {0}...".format(filename)
 			#plotSession(session, [os.path.join('tests', session.collection, session.name + run + '.' + ext) for ext in ('pyz', 'png')] if export else False)
 			plotSession(session, os.path.join('tests', session.collection, session.name + run + '.png') if export else False)

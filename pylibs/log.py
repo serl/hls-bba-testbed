@@ -1,5 +1,6 @@
 import sys, re, json, subprocess, os.path, shutil, traceback, collections, tempfile, tarfile
 from parallelize import Parallelize
+from generic import PlainObject
 
 class LogEvent(object):
 	def __repr__(self):
@@ -76,8 +77,49 @@ class Session(object):
 	def logs_filter(log):
 		return True
 	@classmethod
-	def parse(cls, *args, **kwargs):
+	def parse(cls, sched_file, run, rundir, **kwargs):
 		raise Exception('Not implemented')
+	@staticmethod
+	def read(dirname, **kwargs):
+		inst = None
+		session_re = re.compile('^#SESSION(.+)$')
+		dirname = dirname.rstrip(os.path.sep)
+
+		# decompress if needed
+		if not os.path.isdir(dirname) and dirname.endswith('.tar.gz'):
+			rundir = tempfile.mkdtemp(prefix='hbt_unpack_')
+			try:
+				tarfile.open(dirname, 'r').extractall(rundir)
+			except:
+				shutil.rmtree(rundir)
+				raise
+			remove_after = True
+			sched_file = os.path.join(os.path.dirname(dirname), 'jobs.sched')
+			run = int(dirname.split(os.path.sep)[-1].split('.')[0])
+		else:
+			rundir = dirname
+			remove_after = False
+			sched_file = os.path.normpath(os.path.join(dirname, '..', 'jobs.sched'))
+			run = int(dirname.split(os.path.sep)[-1])
+
+		try:
+			session_type = VLCSession
+			with open(sched_file, "r") as contents:
+				for line in contents:
+					#session line
+					match = session_re.match(line)
+					if match:
+						session = json.loads(match.group(1))
+						if session.has_key('type'):
+							if session['type'] == 'iperf':
+								session_type = IperfSession
+					#skipping unknown lines
+			inst = session_type.parse(sched_file, run, rundir, **kwargs)
+		finally:
+			if remove_after: #cleanup if decompressed
+				shutil.rmtree(rundir)
+
+		return inst
 
 class VLCLog(Log):
 	def __init__(self):
@@ -469,69 +511,47 @@ class VLCSession(Session):
 		return (bwprofile_t, bwprofile_v)
 
 	@classmethod
-	def parse(cls, dirname):
+	def parse(cls, sched_file, run, rundir):
 		inst = cls()
-		dirname = dirname.rstrip(os.path.sep)
+		inst.run = run
 
-		# decompress if needed
-		if not os.path.isdir(dirname) and dirname.endswith('.tar.gz'):
-			rundir = tempfile.mkdtemp(prefix='hbt_unpack_')
-			try:
-				tarfile.open(dirname, 'r').extractall(rundir)
-			except:
-				shutil.rmtree(rundir)
-				raise
-			remove_after = True
-			sched_file = os.path.join(os.path.dirname(dirname), 'jobs.sched')
-			inst.run = int(dirname.split(os.path.sep)[-1].split('.')[0])
-		else:
-			rundir = dirname
-			remove_after = False
-			sched_file = os.path.normpath(os.path.join(dirname, '..', 'jobs.sched'))
-			inst.run = int(dirname.split(os.path.sep)[-1])
+		funcs = []
+		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(rundir, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
+		for h in ('bandwidth', 'delay'):
+			funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(rundir, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
+			for iface in ('eth1', 'eth2'):
+				toclients_file = os.path.join(rundir, 'dump_'+h+'_'+iface+'.pcap.toclients')
+				if os.path.isfile(toclients_file):
+					funcs.append({'fn': TsharkPacketsToClients.parse, 'args': (toclients_file,), 'return_attr': h+'_'+iface+'_toclients'})
 
-		try:
-			funcs = []
-			funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(rundir, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
-			for h in ('bandwidth', 'delay'):
-				funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(rundir, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
-				for iface in ('eth1', 'eth2'):
-					toclients_file = os.path.join(rundir, 'dump_'+h+'_'+iface+'.pcap.toclients')
-					if os.path.isfile(toclients_file):
-						funcs.append({'fn': TsharkPacketsToClients.parse, 'args': (toclients_file,), 'return_attr': h+'_'+iface+'_toclients'})
+		Parallelize(funcs, return_obj=inst).run()
+		inst.add_log(inst.tcpprobe)
+		inst.add_log(inst.bandwidth_buffer)
+		inst.add_log(inst.delay_buffer)
 
-			Parallelize(funcs, return_obj=inst).run()
-			inst.add_log(inst.tcpprobe)
-			inst.add_log(inst.bandwidth_buffer)
-			inst.add_log(inst.delay_buffer)
-
-			session_re = re.compile('^#SESSION(.+)$')
-			with open(sched_file, "r") as contents:
-				for line in contents:
-					#session line
-					match = session_re.match(line)
-					if match:
-						session = json.loads(match.group(1))
-						inst.name = session['name']
-						inst.collection = session['collection']
-						inst.bwprofile = {int(k)+inst.bandwidth_buffer.start_time: v for k,v in session['bwprofile'].iteritems()}
-						inst.max_display_bits = max(inst.bwprofile.values())
-						inst.buffer_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['buffer_profile'].iteritems()}
-						inst.delay_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['delay_profile'].iteritems()}
-						inst.clients = session['clients']
-						for client in inst.clients:
-							log_filename = os.path.join(rundir, client['host'] + '_vlc.log')
-							try:
-								log = inst._addvlclog(log_filename)
-								log.tcpprobe = inst.tcpprobe.filter_by_ip(client['host'])
-							except Exception, e:
-								print traceback.format_exc()
-						continue
-
-					#skipping unknown lines
-		finally:
-			if remove_after: #cleanup if decompressed
-				shutil.rmtree(rundir)
+		session_re = re.compile('^#SESSION(.+)$')
+		with open(sched_file, "r") as contents:
+			for line in contents:
+				#session line
+				match = session_re.match(line)
+				if match:
+					session = json.loads(match.group(1))
+					inst.name = session['name']
+					inst.collection = session['collection']
+					inst.bwprofile = {int(k)+inst.bandwidth_buffer.start_time: v for k,v in session['bwprofile'].iteritems()}
+					inst.max_display_bits = max(inst.bwprofile.values())
+					inst.buffer_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['buffer_profile'].iteritems()}
+					inst.delay_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['delay_profile'].iteritems()}
+					inst.clients = session['clients']
+					for client in inst.clients:
+						log_filename = os.path.join(rundir, client['host'] + '_vlc.log')
+						try:
+							log = inst._addvlclog(log_filename)
+							log.tcpprobe = inst.tcpprobe.filter_by_ip(client['host'])
+						except Exception, e:
+							print traceback.format_exc()
+					continue
+				#skipping unknown lines
 		return inst
 
 	def _addvlclog(self, filename):
@@ -737,6 +757,29 @@ class TsharkPacketsToClients(Log):
 		inst.avg_rate = float(rate_sum)/total_values
 		return inst
 
+class TsharkDroppedPackets(Log):
+	@classmethod
+	def parse(cls, filename):
+		inst = cls()
+		line_re = re.compile('^([\d\.]+),([\d\.]+),(\d+),([\d\.]+),(\d+),(\d+),(\d+)$')
+		with open(filename, "r") as contents:
+			for line in contents:
+				match = line_re.match(line)
+				if match:
+					evt = LogEvent()
+					evt.t = float(match.group(1))
+					evt.src = match.group(2)
+					evt.src_port = int(match.group(3))
+					evt.dst = match.group(4)
+					evt.dst_port = int(match.group(5))
+					evt.len = int(match.group(6))
+					evt.seq = int(match.group(7))
+					inst.events[evt.t] = evt
+					continue
+
+		inst.adjust_time()
+		return inst
+
 class TsharkAnalysis(Log):
 	@classmethod
 	def parse(cls, filename, ip_addr):
@@ -781,23 +824,36 @@ class IperfSession(Session):
 			raise
 
 	@classmethod
-	def parse(cls, dirname, tshark=True):
+	def parse(cls, sched_file, run, rundir, tshark=True):
 		inst = cls()
+		inst.run = run
 		funcs = []
-		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(dirname, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
+		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(rundir, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
+		funcs.append({'fn': TsharkDroppedPackets.parse, 'args': (os.path.join(rundir, 'dropped_packets'),), 'return_attr': 'dropped_packets' })
 		for h in ('bandwidth', 'delay'):
-			funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(dirname, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
+			funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(rundir, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
 		for h in ('sender', 'receiver'):
-			funcs.append({'fn': IperfSession.get_bandwidth, 'args': (os.path.join(dirname, h+'.pcap'),), 'return_attr': 'bandwidth_'+h})
+			funcs.append({'fn': IperfSession.get_bandwidth, 'args': (os.path.join(rundir, h+'.pcap'),), 'return_attr': 'bandwidth_'+h})
 			if tshark:
-				funcs.append({'fn': TsharkAnalysis.parse, 'args': (os.path.join(dirname, h+'.pcap'), '192.168.200.10'), 'return_attr': 'tshark_'+h})
+				funcs.append({'fn': TsharkAnalysis.parse, 'args': (os.path.join(rundir, h+'.pcap'), '192.168.200.10'), 'return_attr': 'tshark_'+h})
 
 		Parallelize(funcs, return_obj=inst).run()
 		inst.add_log(inst.tcpprobe)
+		inst.add_log(inst.dropped_packets)
 		inst.add_log(inst.bandwidth_buffer)
 		inst.add_log(inst.delay_buffer)
 		inst.add_log(inst.tshark_sender)
 		inst.add_log(inst.tshark_receiver)
+
+		session_re = re.compile('^#SESSION(.+)$')
+		with open(sched_file, "r") as contents:
+			for line in contents:
+				#session line
+				match = session_re.match(line)
+				if match:
+					inst.session_infos = PlainObject()
+					inst.session_infos.__dict__.update(json.loads(match.group(1)))
+					continue
 
 		return inst
 

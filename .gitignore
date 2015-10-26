@@ -1,5 +1,6 @@
 .vagrant/
 .mail
+.noreload
 /log/*
 !/log/.gitkeep
 /scripts/ssh/*

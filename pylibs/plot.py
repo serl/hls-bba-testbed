@@ -3,6 +3,7 @@ import numpy as np
 import cPickle as pickle
 from zipfile import PyZipFile
 from tempfile import NamedTemporaryFile
+from generic import is_percentage
 
 def show(plt, session, fig, export, size=None):
 	if export:
@@ -368,6 +369,7 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 	if plot_end is None:
 		plot_end = session.duration
 	tcpprobe_t, tcpprobe_events = session.tcpprobe.get_events(time_relative_to=session)
+	dropped_packets_t, dropped_packets_events = session.dropped_packets.get_events(time_relative_to=session)
 	bandwidth_buffer_t, bandwidth_buffer_packets = session.bandwidth_buffer.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
 	delay_buffer_t, delay_buffer_packets = session.delay_buffer.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
 	thark = True
@@ -381,12 +383,18 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 			break
 		tshark_framelen_t[h], tshark_framelen[h] = session.__dict__['tshark_'+h].get_events(time_relative_to=session, values_fn=lambda evt: evt.frame_len, filter_fn=lambda evt: not evt.sent)
 		tshark_rtt_t[h], tshark_rtt[h] = session.__dict__['tshark_'+h].get_events(time_relative_to=session, values_fn=lambda evt: evt.rtt, filter_fn=lambda evt: evt.rtt is not None and evt.sent)
+		tshark = True
 
 	fig = plt.figure()
 	plot_id = 1
 
 	ax_packets = fig.add_subplot(3 if tshark else 1, 1, plot_id)
 	ax_packets.set_ylabel('packets')
+	if is_percentage(session.session_infos.bandwidth_buffersize_description) is not False:
+		buffersize_string = "{} BDP, {} packets".format(session.session_infos.bandwidth_buffersize_description, session.session_infos.bandwidth_buffersize)
+	else:
+		buffersize_string = "{} packets".format(session.session_infos.bandwidth_buffersize)
+	ax_packets.set_title("{type} session, BW: {bandwidth} (buf {buffersize_string}), RTT: {delay}, policy: {aqm_algorithm}".format(buffersize_string=buffersize_string, **session.session_infos.__dict__))
 
 	#tcpprobe
 	cwnd = [evt.snd_cwnd for evt in tcpprobe_events]
@@ -394,9 +402,13 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 	ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpprobe_events]
 	ax_packets.step(tcpprobe_t, ssthresh, color='gray', label='ssthresh')
 
+	#dropped_packets
+	for drop in dropped_packets_t:
+		ax_packets.axvline(drop, alpha=.7, linewidth=thickness_factor, color='red')
+
 	#buffer
 	ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, color='blue', label='bw buffer')
-	ax_packets.step(delay_buffer_t, delay_buffer_packets, color='purple', label='delay buffer')
+	ax_packets.step(delay_buffer_t, delay_buffer_packets, color='purple', alpha=.5, label='delay buffer')
 
 	ax_packets.axis([plot_start, plot_end, 0, None])
 
@@ -430,16 +442,18 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 			ax_msec.axis([plot_start, plot_end, min(tshark_rtt[h])*0.8, max(tshark_rtt[h])*1.2])
 
 			#bw
-			ax_bytes.text(plot_end*.99, max(tshark_framelen[h]), h+' bw: '+str(session.__dict__['bandwidth_'+h])+'bit/s', ha='right')
+			ax_bytes.text(plot_end*.99, max(tshark_framelen[h]), '{0} bw: {1:.1f}kbit/s'.format(h, session.__dict__['bandwidth_'+h]/1000), ha='right')
+			ax_bytes.set_title(h + '.pcap')
 		else:
-			bw_text += h+' bw: '+str(session.__dict__['bandwidth_'+h])+'bit/s '
+			bw_text += '{0} bw: {1:.1f}kbit/s '.format(h, session.__dict__['bandwidth_'+h]/1000)
 
 	if bw_text is not '':
 		ax_msec.text(plot_end, max(rtt)*1.2, bw_text, ha='right')
 
+	import matplotlib.patches as mpatches
 	handles, labels = ax_packets.get_legend_handles_labels()
-	handles += [plt.Line2D((0,1),(0,0), alpha=0.7, color='green')]
-	labels += ['RTT']
+	handles += [plt.Line2D((0,1),(0,0), alpha=0.7, color='green'), mpatches.Patch(color='red', alpha=.7)]
+	labels += ['RTT', 'dropped packets']
 	ax_packets.legend(handles, labels, fontsize='small')
 
 	show(plt, session, fig, export, plot_size)

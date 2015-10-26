@@ -19,3 +19,11 @@ def mean_confidence(data, confidence=.95):
 	h = values.std() / math.sqrt(values.size) * t.ppf((1+confidence)/2., values.size-1)
 	return (mean, h)
 
+import re
+percentage_re = re.compile('^(\d+)%$')
+def is_percentage(value):
+	match = percentage_re.match(value)
+	if match:
+		return int(match.group(1))
+	return False
+

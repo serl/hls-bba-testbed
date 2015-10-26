@@ -99,6 +99,50 @@ function set_bw {
 	echo "Added/replaced netem qdisc with rate ${bw_bits}bits/s (buffer of $buffer packets$buffer_echo)"
 }
 
+function set_bw_aqm {
+	aqm=$1
+	bw_bits=$(get_bits "$2")
+	check_success
+	mss=1500
+
+	buffer="$3"
+	if [[ $buffer =~ ^([0-9]+)%$ ]]; then
+		percentage=${BASH_REMATCH[1]}
+		rtt="$4"
+		if [ -z $rtt ]; then
+			echo "RTT needed to calculate percentage of BDP."
+			exit 1
+		fi
+		rtt_ms=$(get_ms "$rtt")
+		check_success
+		buffer_echo=": $percentage% BDP"
+		buffer=$((bw_bits * rtt_ms * percentage / 8 / mss / 100000))
+		if [ "$buffer" -le "0" ]; then
+			buffer=1
+		fi
+	fi
+
+	("$0" show | grep htb >/dev/null || run_command qdisc replace root handle 1: htb default 1) && \
+	run_command class replace parent 1: classid 1:1 htb rate "$bw_bits" && \
+	echo "Added/replaced hbf qdisc with rate ${bw_bits}bits/s" || \
+	return
+
+	case "$aqm" in
+		ared)
+			buffer=$((buffer * mss))
+			run_command qdisc replace parent 1:1 handle 20:0 red limit $buffer avpkt 1000 adaptive bandwidth "$bw_bits" && \
+			echo "Added $aqm AQM to hbf qdisc (buffer of $buffer bytes)"
+			;;
+		codel)
+			run_command qdisc replace parent 1:1 handle 20:0 codel limit $buffer noecn && \
+			echo "Added $aqm AQM to hbf qdisc (buffer of $buffer packets)"
+			;;
+		*)
+			echo "$aqm AQM not supported."
+			;;
+	esac
+}
+
 function set_delay {
 	delay="$1"
 	run_command qdisc replace root netem delay "$delay" 2>&1 && \
@@ -125,7 +169,7 @@ function watch_buffer_size {
 }
 
 function usage {
-	echo "Usage: $0 {set_bw <bw> [max_buffer_size] [rtt]|set_delay <rtt>|destroy|show|watch_buffer_size}"
+	echo "Usage: $0 {set_bw <bw> [max_buffer_size] [rtt]|set_bw_aqm <algorithm> <bw> <max_buffer_size> [rtt]|set_delay <rtt>|destroy|show|watch_buffer_size}"
 	exit 1
 }
 
@@ -141,6 +185,14 @@ case "$1" in
 			usage
 		else
 			set_bw "$2" "$3" "$4"
+		fi
+		;;
+	set_bw_aqm)
+		if [ -z "$2" ] || [ -z "$3" ]; then
+			usage
+		else
+			shift
+			set_bw_aqm "$@"
 		fi
 		;;
 	set_delay)
