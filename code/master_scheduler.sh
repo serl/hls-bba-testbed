@@ -33,6 +33,6 @@ for host in $hosts; do
 done
 
 wait
-RUN_PATH="$logdir" /vagrant/code/run_dir.sh /vagrant/code/post_run.d
+/vagrant/code/post_run.sh "$logdir"
 rmdir "$lockdir" &>/dev/null || echo -e "${Red}Unclean exit!$Color_Off"
 
