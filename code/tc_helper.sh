@@ -106,9 +106,9 @@ function set_bw_aqm {
 	mss=1500
 
 	buffer="$3"
+	rtt="$4"
 	if [[ $buffer =~ ^([0-9]+)%$ ]]; then
 		percentage=${BASH_REMATCH[1]}
-		rtt="$4"
 		if [ -z $rtt ]; then
 			echo "RTT needed to calculate percentage of BDP."
 			exit 1
@@ -130,11 +130,15 @@ function set_bw_aqm {
 	case "$aqm" in
 		ared)
 			buffer=$((buffer * mss))
-			run_command qdisc replace parent 1:1 handle 20:0 red limit $buffer avpkt 1000 adaptive bandwidth "$bw_bits" && \
+			run_command qdisc replace parent 1:1 handle 20:0 red limit $buffer avpkt $mss adaptive bandwidth "$bw_bits" && \
 			echo "Added $aqm AQM to hbf qdisc (buffer of $buffer bytes)"
 			;;
 		codel)
-			run_command qdisc replace parent 1:1 handle 20:0 codel limit $buffer noecn && \
+			if [ -z $rtt ]; then
+				echo "RTT needed to use codel."
+				exit 1
+			fi
+			run_command qdisc replace parent 1:1 handle 20:0 codel limit $buffer interval $rtt noecn && \
 			echo "Added $aqm AQM to hbf qdisc (buffer of $buffer packets)"
 			;;
 		*)
