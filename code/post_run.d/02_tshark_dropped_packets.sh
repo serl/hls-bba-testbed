@@ -27,7 +27,7 @@ wait
 
 diff "$in_temp" "$out_temp" | grep '^<' | cut -d' ' -f2- | \
 while IFS= read -r line; do
-	grep -E "^[0-9.]+,$line\$" "$in_temp_time" | head -n1 >>"$unsorted_out_file" || echo "error"
+	grep -E "^[0-9.]+,$line\$" "$in_temp_time" | head -n-1 >>"$unsorted_out_file" || echo "Error calculating dropped packets on $RUN_PATH" >&2
 done
 
 sort "$unsorted_out_file" > "$OUT_FILE"
