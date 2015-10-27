@@ -36,7 +36,7 @@ for schedule_file in "$@"; do
 	while [ $repetition -lt $repeat ]; do
 		run_index=1
 		log_dir="$schedule_dir/$run_index"
-		while [ -d $log_dir ]; do
+		while [ -d $log_dir ] || [ -f $log_dir.tar.gz ]; do
 			let run_index+=1
 			log_dir="$schedule_dir/$run_index"
 		done
