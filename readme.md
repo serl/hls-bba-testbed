@@ -7,7 +7,7 @@ Documentation in progress...
 
 ### Testing
 * Vagrant and VirtualBox
-* video files in `code/http\_server/static`
+* video files in `code/http_server/static`
 
 ### Analysis
 To exploit the already configured python on a virtual machine, use `./python.sh`, and everything should (slowly) work out of the box. Otherwhise, you can use your own python.
@@ -20,5 +20,5 @@ This configuration should ensure everything is working:
 
 
 ## How to
-* rerun post\_run analysis: `vagrant ssh server`, `/vagrant/code/post\_run.sh <rundirs...>`. Where each `rundir` is in the form `/vagrant/tests/...`
+* rerun post\_run analysis: `vagrant ssh server`, `/vagrant/code/post_run.sh <rundirs...>`. Where each `rundir` is in the form `/vagrant/tests/...`
 
