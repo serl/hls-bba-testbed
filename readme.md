@@ -20,5 +20,7 @@ This configuration should ensure everything is working:
 
 
 ## How to
+* receive an email at the end of the tests: create a file named `.mail` with an email address
+* avoid the halt of all the virtual machines after the tests: create an empty file named `.noreload`
 * rerun post\_run analysis: `vagrant ssh server`, `/vagrant/code/post_run.sh <rundirs...>`. Where each `rundir` is in the form `/vagrant/tests/...`
 
