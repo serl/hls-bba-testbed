@@ -130,7 +130,7 @@ function set_bw_aqm {
 	case "$aqm" in
 		ared)
 			buffer=$((buffer * mss))
-			run_command qdisc replace parent 1:1 handle 20:0 red limit $buffer avpkt $mss adaptive bandwidth "$bw_bits" && \
+			run_command qdisc replace parent 1:1 handle 20:0 red limit $buffer avpkt 1000 adaptive bandwidth "$bw_bits" && \
 			echo "Added $aqm AQM to hbf qdisc (buffer of $buffer bytes)"
 			;;
 		codel)
