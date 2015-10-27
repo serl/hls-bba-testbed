@@ -27,6 +27,8 @@ class Test(object):
 		if self.log_routerbuffer:
 			self._events.append(RouterBufferLogger(delay=0, host='bandwidth'))
 			self._events.append(RouterBufferLogger(delay=0, host='delay'))
+		self._events.append(TrafficControlCleanup(host='bandwidth'))
+		self._events.append(TrafficControlCleanup(host='delay'))
 
 	def add_event(self, e):
 		self._events.append(e)
@@ -39,6 +41,8 @@ class Test(object):
 		for evt in self._events:
 			if KilledEvent in type(evt).__bases__ and not 'kill_after' in evt.__dict__:
 				evt.kill_after = last_moment - evt.delay
+			if CleanupEvent in type(evt).__bases__:
+				evt.delay = last_moment
 
 		events = sorted(self._events, key=lambda evt: evt.delay)
 		#scheduler_commands = '#eval LOGDIR=/vagrant/tests/'+self.collection+'/'+self.name+'\n' now injected from the scheduler
@@ -118,7 +122,10 @@ class KilledEvent(Event):
 		return up + '\n' + down
 	def killed_command(self):
 		raise Exception('Unimplemented')
-	
+
+class CleanupEvent(Event):
+	pass
+
 class Player(KilledEvent):
 	curl='no'
 	def killed_command(self):
@@ -148,6 +155,10 @@ class BwChange(Event):
 	def add_test_infos(self, test):
 		test.bw_profile[self.delay] = bw_convert(self.bw)
 		test.buffer_profile[self.delay] = router_buffer_convert(self.buffer_size, self.bw, self.rtt)
+
+class TrafficControlCleanup(CleanupEvent):
+	def commands(self):
+		return '{0} {1} /vagrant/code/tc_helper.sh destroy'.format(self.host, self.delay)
 
 class DelayChange(Event):
 	packet_delay='200ms'
