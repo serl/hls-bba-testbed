@@ -4,7 +4,7 @@ from generic import mkdir_p, is_percentage
 class Test(object):
 	save_dir = 'tests'
 
-	def __init__(self, name, collection='', player=None, init_bw=None, packet_delay=None, log_cwnd=True, log_routerbuffer=True):
+	def __init__(self, name, collection='', player=None, init_bw=None, packet_delay=None, log_cwnd=True, log_routerbuffer=True, aqm_algorithm='droptail'):
 		self._events = []
 		self.name = name
 		self.collection = collection
@@ -14,6 +14,7 @@ class Test(object):
 		self.clients = []
 		self.log_cwnd = log_cwnd
 		self.log_routerbuffer = log_routerbuffer
+		self.aqm_algorithm = aqm_algorithm
 
 		if player is not None:
 			self._events.append(player)
@@ -48,9 +49,8 @@ class Test(object):
 		#scheduler_commands = '#eval LOGDIR=/vagrant/tests/'+self.collection+'/'+self.name+'\n' now injected from the scheduler
 		scheduler_commands = ''
 		for evt in events:
-			scheduler_commands += evt.commands() + '\n'
-			evt.add_test_infos(self)
-		scheduler_commands = '#SESSION' + json.dumps({'name': self.name, 'collection': self.collection, 'bwprofile': self.bw_profile, 'buffer_profile': self.buffer_profile, 'delay_profile': self.delay_profile, 'clients': self.clients}) + '\n' + scheduler_commands
+			scheduler_commands += evt.commands(self) + '\n'
+		scheduler_commands = '#SESSION' + json.dumps({'name': self.name, 'collection': self.collection, 'bwprofile': self.bw_profile, 'aqm_algorithm': self.aqm_algorithm, 'buffer_profile': self.buffer_profile, 'delay_profile': self.delay_profile, 'clients': self.clients}) + '\n' + scheduler_commands
 
 		if echo:
 			print scheduler_commands
@@ -105,22 +105,20 @@ class Event(object):
 	delay=0
 	def __init__(self, **kwds):
 		self.__dict__.update(kwds)
-	def commands(self):
+	def commands(self, test):
 		raise Exception('Not implemented')
-	def add_test_infos(self, test):
-		pass
 	def __repr__(self):
 		return repr(self.__dict__)
 
 class KilledEvent(Event):
-	def commands(self):
+	def commands(self, test):
 		if not 'kill_after' in self.__dict__:
 			raise Exception('Missing kill_after in KilledEvent')
 		rndstr = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(8))
-		up = '%s %d %s & echo $! >/tmp/pid_%s' % (self.host, self.delay, self.killed_command(), rndstr)
+		up = '%s %d %s & echo $! >/tmp/pid_%s' % (self.host, self.delay, self.killed_command(test), rndstr)
 		down = '%s %d sudo kill -SIGTERM $(cat /tmp/pid_%s)' % (self.host, self.kill_after + self.delay, rndstr)
 		return up + '\n' + down
-	def killed_command(self):
+	def killed_command(self, test):
 		raise Exception('Unimplemented')
 
 class CleanupEvent(Event):
@@ -128,43 +126,43 @@ class CleanupEvent(Event):
 
 class Player(KilledEvent):
 	curl='no'
-	def killed_command(self):
-		return 'export HTTPLIVE_ALGORITHM={0} HTTPLIVE_CURL={3} ; /vagrant/code/vlc/vlc -I "dummy" -V "dummy" -A "dummy" "{1}" >$LOGDIR/{2}_vlc.log 2>$LOGDIR/{2}_vlc.err'.format(self.algo.upper(), self.url, self.host, self.curl)
-	def add_test_infos(self, test):
+	def killed_command(self, test):
 		test.clients.append({'delay': self.delay, 'host': self.host})
+		return 'export HTTPLIVE_ALGORITHM={0} HTTPLIVE_CURL={3} ; /vagrant/code/vlc/vlc -I "dummy" -V "dummy" -A "dummy" "{1}" >$LOGDIR/{2}_vlc.log 2>$LOGDIR/{2}_vlc.err'.format(self.algo.upper(), self.url, self.host, self.curl)
 
 class CwndLogger(KilledEvent):
-	def killed_command(self):
+	def killed_command(self, test):
 		return '/vagrant/code/tcpprobe_helper.sh 3000 &>$LOGDIR/cwnd.log'
 
 class RouterBufferLogger(KilledEvent):
-	def killed_command(self):
+	def killed_command(self, test):
 		return '/vagrant/code/tc_helper.sh watch_buffer_size &>$LOGDIR/{0}_buffer.log'.format(self.host)
 
 class TcpDump(KilledEvent):
 	snaplen=96
-	def killed_command(self):
+	def killed_command(self, test):
 		return 'sudo tcpdump -tt -v -i{1} -s{2} -w $LOGDIR/dump_{0}_{1}.pcap &>$LOGDIR/dump_{0}_{1}.log'.format(self.host, self.iface, self.snaplen)
 
 class BwChange(Event):
 	buffer_size=200
 	rtt=0
 	host='bandwidth'
-	def commands(self):
-		return '{0} {1} /vagrant/code/tc_helper.sh set_bw {2} {3} {4}'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt)
-	def add_test_infos(self, test):
+	def commands(self, test):
 		test.bw_profile[self.delay] = bw_convert(self.bw)
 		test.buffer_profile[self.delay] = router_buffer_convert(self.buffer_size, self.bw, self.rtt)
+		if test.aqm_algorithm == 'droptail':
+			return '{0} {1} /vagrant/code/tc_helper.sh set_bw {2} {3} {4}'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt)
+		else:
+			return '{0} {1} /vagrant/code/tc_helper.sh set_bw_aqm {5} {2} {3} {4}'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt, test.aqm_algorithm)
 
 class TrafficControlCleanup(CleanupEvent):
-	def commands(self):
+	def commands(self, test):
 		return '{0} {1} /vagrant/code/tc_helper.sh destroy'.format(self.host, self.delay)
 
 class DelayChange(Event):
 	packet_delay='200ms'
 	host='delay'
-	def commands(self):
-		return '{0} {1} /vagrant/code/tc_helper.sh set_delay {2}'.format(self.host, self.delay, self.packet_delay)
-	def add_test_infos(self, test):
+	def commands(self, test):
 		test.delay_profile[self.delay] = delay_convert(self.packet_delay)
+		return '{0} {1} /vagrant/code/tc_helper.sh set_delay {2}'.format(self.host, self.delay, self.packet_delay)
 
