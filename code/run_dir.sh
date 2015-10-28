@@ -6,7 +6,8 @@ if [ -z "$1" ]; then
 fi
 
 for f in $1/*; do
-	if ! ([ -x "$f" ] && "$f"); then
+	[ -x "$f" ] || continue
+	if ! "$f"; then
 		echo "Error executing $f, aborting." >&2
 		exit 1
 	fi
