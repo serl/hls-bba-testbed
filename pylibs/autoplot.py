@@ -34,6 +34,6 @@ if __name__ == "__main__":
 		print "Plotting {0}...".format(rundir)
 		plotSession(session, '{}_{}.{}'.format(testdir, run, export) if export else False)
 	except:
-		print "for run {}".format(filename)
+		print "for run {}".format(rundir)
 		raise
 
