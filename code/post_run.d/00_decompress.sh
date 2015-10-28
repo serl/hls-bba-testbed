@@ -1,13 +1,13 @@
 #!/bin/bash
 
 if [ -d "$RUN_PATH" ]; then
-	echo "Directory exists. Nothing to decompress: $RUN_PATH"
 	exit 0
 fi
 
 run=$(basename $RUN_PATH)
 if [[ $run =~ \.tar\.gz$ ]]; then
 	echo "Run without .tar.gz in $RUN_PATH!" >&2
+	exit 1
 fi
 if ! [[ $run =~ ^[0-9]+$ ]]; then
 	echo "Invalid run: $run"
@@ -31,5 +31,5 @@ if [ "$success" == "0" ]; then
 else
 	rm -r "$RUN_PATH"
 	echo "Decompress error on $RUN_PATH" >&2
+	exit 1
 fi
-
