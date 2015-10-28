@@ -158,7 +158,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 				handles, labels = ax_bba1bits.get_legend_handles_labels()
 				handles += [plt.Line2D((0,1),(0,0), alpha=0.4, color='black', linestyle='--')]
-				labels += ['nominal bitrates']
+				labels += ['nominal bitrates (min, max)']
 				ax_bba1bits.legend(handles, labels, fontsize='small')
 
 				i += 1
@@ -220,7 +220,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			avg_in_rate = '{0:.2f}kbit/s'.format(session.bandwidth_eth1_toclients.get_avg_rate()/1000)
 		except:
 			pass
-		ax_packets.text(.99, .02, 'avg in rate: {0}, avg out rate: {1}, time with empty buffer: {2:.1f}%'.format(avg_in_rate, avg_out_rate, session.get_avg_router_idle()), transform=ax_packets.transAxes, weight='semibold', ha='right')
+		ax_packets.text(.99, .02, 'policy: {}, time with empty buffer: {:.1f}%\navg in rate: {}, avg out rate: {}'.format(session.aqm_algorithm, session.get_avg_router_idle(), avg_in_rate, avg_out_rate), transform=ax_packets.transAxes, weight='semibold', ha='right')
 
 		try:
 			h_sampling_time = session.bandwidth_eth1_toclients.sampling_time/2

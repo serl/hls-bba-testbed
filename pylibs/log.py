@@ -297,6 +297,7 @@ class VLCSession(Session):
 		self.run = ''
 		self.collection = ''
 		self.max_display_bits = 0
+		self.aqm_algorithm = 'unknown'
 
 	def get_unfairness(self, time_relative_to=None):
 		if time_relative_to is None:
@@ -538,6 +539,7 @@ class VLCSession(Session):
 					session = json.loads(match.group(1))
 					inst.name = session['name']
 					inst.collection = session['collection']
+					inst.aqm_algorithm = session['aqm_algorithm'] if session.has_key('aqm_algorithm') else 'droptail'
 					inst.bwprofile = {int(k)+inst.bandwidth_buffer.start_time: v for k,v in session['bwprofile'].iteritems()}
 					inst.max_display_bits = max(inst.bwprofile.values())
 					inst.buffer_profile = {int(k)+inst.bandwidth_buffer.start_time: int(v) for k,v in session['buffer_profile'].iteritems()}
