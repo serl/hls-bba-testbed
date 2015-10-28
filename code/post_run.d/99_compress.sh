@@ -14,12 +14,11 @@ fi
 testdir=$(dirname $RUN_PATH)
 tarfilepath="$testdir/$run.tar.gz"
 echo "Compressing $RUN_PATH..."
-tar -czf "$tarfilepath" -C "$RUN_PATH" .
-success=$?
-if [ "$success" == "0" ]; then
+if tar -czf "$tarfilepath" -C "$RUN_PATH" . ; then
 	rm -r "$RUN_PATH"
 else
 	rm "$tarfilepath"
 	echo "Compress error on $RUN_PATH" >&2
 fi
 
+exit 0

@@ -7,3 +7,4 @@ for pcap in $RUN_PATH/*.pcap; do
 done
 
 wait
+exit 0

@@ -34,3 +34,4 @@ sort "$unsorted_out_file" > "$OUT_FILE"
 
 rm "$in_temp_time" "$in_temp" "$out_temp" "$unsorted_out_file"
 
+exit 0

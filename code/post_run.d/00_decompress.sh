@@ -19,17 +19,17 @@ tarfilepath="$testdir/$run.tar.gz"
 
 if [ ! -f "$tarfilepath" ]; then
 	echo "$tarfilepath not found. Unable to decompress." >&2
-	exit 0
+	exit 1
 fi
 
 echo "Decompressing $tarfilepath..."
 mkdir -p "$RUN_PATH"
-tar -C "$RUN_PATH" -xzf "$tarfilepath"
-success=$?
-if [ "$success" == "0" ]; then
+if tar -C "$RUN_PATH" -xzf "$tarfilepath" ; then
 	rm "$tarfilepath"
 else
 	rm -r "$RUN_PATH"
 	echo "Decompress error on $RUN_PATH" >&2
 	exit 1
 fi
+
+exit 0
