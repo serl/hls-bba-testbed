@@ -20,6 +20,17 @@ fi
 
 if [ "$dry_run" == "false" ]; then
 	vagrant up
+
+	#selective start-up of clients
+	clients=""
+	for schedule_file in "$@"; do
+		if [ -d $schedule_file ]; then
+			schedule_file="$schedule_file/jobs.sched"
+		fi
+		[ ! -e $schedule_file ] && continue
+		clients="$( ( echo "$clients" ; grep --extended-regexp --only-matching '^client[0-9]+' "$schedule_file" ) | sed '/^$/d' | sort -u)"
+	done
+	vagrant up $clients
 fi
 
 for schedule_file in "$@"; do

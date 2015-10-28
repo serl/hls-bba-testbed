@@ -95,7 +95,7 @@ Vagrant.configure(2) do |config|
     hostname = "client#{i}"
     ip = "#{clients_ip}.#{10+i}"
     client_net_id = net_id
-    config.vm.define hostname do |client|
+    config.vm.define hostname, autostart: false do |client|
       client.vm.provider "virtualbox" do |vb|
         vb.memory = clients_memory
         vb.cpus = clients_cpus

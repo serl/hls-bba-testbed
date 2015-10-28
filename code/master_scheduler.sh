@@ -12,7 +12,7 @@ if ! mkdir "$lockdir" &>/dev/null; then
 	exit 1
 fi
 
-hosts=$(echo "$schedule" | grep --extended-regexp --only-matching "^[^#\\ ]+" | sort | uniq)
+hosts=$(echo "$schedule" | grep --extended-regexp --only-matching "^[^#\\ ]+" | sort -u)
 hosts_count=$(echo $hosts | wc -w)
 master_delay=$(($hosts_count * 2 + 2))
 duration=$(echo "$schedule" | grep --invert-match '^#' | cut -f2 -d' ' | sort --numeric-sort | tail -n1)
