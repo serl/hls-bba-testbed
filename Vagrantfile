@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-server_memory = 1024
+server_memory = 2048
 server_cpus = 2
 server_ip = '192.168.100.10'
 
