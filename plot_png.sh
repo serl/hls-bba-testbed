@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#TODO should be called 'autopngplotter' or something and should use pylibs/autoplot.py
-
 if [ "$1" == "force" ]; then
 	force=1
 	shift
@@ -36,6 +34,6 @@ for sessiondir in $sessiondirs; do
 			echo $rundir
 		fi
 	done
-done | nice parallel --gnu --eta -j10 python plot_vlc.py export
+done | parallel --gnu --eta -j10 nice python pylibs/autoplot.py --silent --export=png
 echo "$? jobs failed."
 
