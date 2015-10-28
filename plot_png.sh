@@ -34,6 +34,6 @@ for sessiondir in $sessiondirs; do
 			echo $rundir
 		fi
 	done
-done | parallel --gnu --eta -j10 nice python pylibs/autoplot.py --silent --export=png
+done | parallel --gnu --eta -j10 nice python pylibs/plot_run.py --silent --export=png
 echo "$? jobs failed."
 

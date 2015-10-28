@@ -5,5 +5,5 @@ if [ -z "$1" -o ! -e "$1" ]; then
 	exit 1
 fi
 
-python pylibs/autoplot.py "$1"
+python pylibs/plot_run.py "$1"
 
