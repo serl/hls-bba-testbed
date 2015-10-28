@@ -36,22 +36,22 @@ if __name__ == "__main__":
 					summary = PlainObject()
 					summary.buffering_fraction = VLClog.get_buffering_fraction()
 					summary.avg_bitrate = VLClog.get_avg_bitrate()
-					summary.avg_bitrate_ratio = summary.avg_bitrate/session.get_fairshare()*100
+					summary.avg_bitrate_ratio = summary.avg_bitrate / session.get_fairshare() * 100
 					summary.avg_quality = VLClog.get_avg_quality()
 					summary.instability = VLClog.get_instability()
 
 					summary.link_utilization = -1
 					if len(session.bwprofile) == 1:
-						summary.link_utilization = session.bandwidth_eth2_toclients.get_avg_rate()/session.bwprofile.values()[0]*100
+						summary.link_utilization = session.bandwidth_eth2_toclients.get_avg_rate() / session.bwprofile.values()[0] * 100
 
 					summary.avg_router_queue_len = session.bandwidth_buffer.get_avg_queue_len()
 					if len(set(session.buffer_profile.values())) != 1:
 						raise Exception("More to code if router buffer size is not constant!")
-					summary.avg_relative_router_queue_len = summary.avg_router_queue_len / session.buffer_profile.values()[0]
+					summary.avg_relative_router_queue_len = summary.avg_router_queue_len / session.buffer_profile.values()[0] * 100
 
 					if len(set(session.delay_profile.values())) != 1:
 						raise Exception("More to code if RTT is not constant!")
-					summary.avg_relative_rtt = VLClog.tcpprobe.get_avg_srtt() / session.delay_profile.values()[0]
+					summary.avg_relative_rtt = VLClog.tcpprobe.get_avg_srtt() / session.delay_profile.values()[0] * 100
 
 					if len(session.VLClogs) > 1:
 						summary.general_unfairness = session.get_general_unfairness()
