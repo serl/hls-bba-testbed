@@ -53,7 +53,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		#session data
 		for stream in session.streams:
 			ax_bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
-		bwprofile = session.get_bwprofile()
+		bwprofile = session.get_profile('bwprofile')
 		if bwprofile is not None:
 			ax_bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='total bandwidth')
 			if len(session.VLClogs) > 1:
@@ -105,7 +105,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				for stream in (session.streams[0], session.streams[-1]):
 					ax_bba1bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
 
-				#bwprofile = session.get_bwprofile()
+				#bwprofile = session.get_profile('bwprofile')
 				#if bwprofile is not None:
 				#	ax_bba1bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bw limit')
 
@@ -197,9 +197,12 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 		#buffer
 		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, where='post', color='#0B3B0B', alpha=.8, label='bottleneck router buffer', linewidth=thickness_factor)
+		buffer_profile = session.get_profile('buffer_profile')
+		if buffer_profile is not None:
+			ax_packets.step(buffer_profile[0], buffer_profile[1], where='post', marker='.', markersize=1, linestyle=':', color='blue', linewidth=2*thickness_factor, label='bottleneck router buffer limit')
 		#ax_packets.step(delay_buffer_t, delay_buffer_packets, where='post', color='purple', label='delay buffer', linewidth=thickness_factor)
 
-		ax_packets.axis([plot_start, plot_end, 0, None])
+		ax_packets.axis([plot_start, plot_end, 0, max(buffer_profile[1])*1.1])
 		#handles, labels = ax_packets.get_legend_handles_labels()
 		#ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
@@ -481,7 +484,7 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 		for stream in session.streams:
 			ax_bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
 
-		bwprofile = session.get_bwprofile()
+		bwprofile = session.get_profile('bwprofile')
 		if bwprofile is not None:
 			ax_bits.step(bwprofile[0], [v/len(session.VLClogs) for v in bwprofile[1]], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='bandwidth fair share')
 

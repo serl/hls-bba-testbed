@@ -419,6 +419,8 @@ class VLCSession(Session):
 		return self.bwprofile[k]
 
 	def get_fairshare(self):
+		if len(set(self.bwprofile.values())) > 1:
+			raise Exception("Fair share not constant")
 		return max(self.bwprofile.values()) / len(self.clients)
 
 	def get_fraction_both_overestimating(self, what='avg_bandwidth'): #nossdav-akhshabi mu
@@ -493,8 +495,9 @@ class VLCSession(Session):
 
 		return self._fraction_both_on
 
-	def get_bwprofile(self, time_relative_to=None):
-		if not len(self.bwprofile):
+	def get_profile(self, item_name, time_relative_to=None): #bwprofile
+		profile = self.__dict__[item_name]
+		if not len(profile):
 			return None
 
 		if time_relative_to is None:
@@ -502,14 +505,14 @@ class VLCSession(Session):
 		if Session in type(time_relative_to).__bases__:
 			time_relative_to = time_relative_to.start_time
 
-		bwprofile_t = []
-		bwprofile_v = []
-		for rel_t, v in sorted(self.bwprofile.iteritems()):
-			bwprofile_t.append(rel_t - time_relative_to)
-			bwprofile_v.append(v)
-		bwprofile_t.append(self.duration)
-		bwprofile_v.append(bwprofile_v[-1])
-		return (bwprofile_t, bwprofile_v)
+		profile_t = []
+		profile_v = []
+		for rel_t, v in sorted(profile.iteritems()):
+			profile_t.append(rel_t - time_relative_to)
+			profile_v.append(v)
+		profile_t.append(self.duration)
+		profile_v.append(profile_v[-1])
+		return (profile_t, profile_v)
 
 	@classmethod
 	def parse(cls, sched_file, run, rundir):
