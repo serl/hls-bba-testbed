@@ -19,6 +19,9 @@ clients_ip = '192.168.200'
 
 network_prefix = Dir.pwd[1..-1].gsub('/', '-')
 
+analysis_memory = 22528
+analysis_cpus = 16
+
 Vagrant.configure(2) do |config|
   net_id = 1
   config.vm.box = "ubuntu/trusty32"
@@ -114,6 +117,17 @@ Vagrant.configure(2) do |config|
       client.vm.provision :shell, inline: "cat /vagrant/scripts/ssh/id_rsa.pub >> ~/.ssh/authorized_keys", privileged: false
       client.vm.provision :shell, path: "scripts/compile_vlc.sh"
     end
+  end
+
+  config.vm.define "analysis", autostart: false do |analysis|
+    analysis.vm.box = "ubuntu/trusty64"
+    analysis.vm.hostname = "analysis"
+    analysis.vm.provider "virtualbox" do |vb|
+      vb.memory = analysis_memory
+      vb.cpus = analysis_cpus
+    end
+
+    analysis.vm.provision :shell, path: "scripts/bootstrap_analysis.sh"
   end
 
 end
