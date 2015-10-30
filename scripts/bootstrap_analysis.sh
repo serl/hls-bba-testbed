@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-apt-get -y install tshark python-pip python-matplotlib python-scipy
+apt-get -y install tshark parallel python-pip python-matplotlib python-scipy
 
