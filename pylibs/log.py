@@ -606,7 +606,7 @@ class TcpProbeLog(Log):
 		return inst
 
 	def get_avg_srtt(self):
-		return sum([evt.srtt for evt in self.events.values()]) / len(self.events)
+		return float(sum([evt.srtt for evt in self.events.values()])) / len(self.events)
 
 	@classmethod
 	def parse(cls, filename):
