@@ -198,11 +198,10 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		#buffer
 		ax_packets.step(bandwidth_buffer_t, bandwidth_buffer_packets, where='post', color='#0B3B0B', alpha=.8, label='bottleneck router buffer', linewidth=thickness_factor)
 		buffer_profile = session.get_profile('buffer_profile')
-		if buffer_profile is not None:
-			ax_packets.step(buffer_profile[0], buffer_profile[1], where='post', marker='.', markersize=1, linestyle=':', color='blue', linewidth=2*thickness_factor, label='bottleneck router buffer limit')
+		ax_packets.step(buffer_profile[0], buffer_profile[1], where='post', marker='.', markersize=1, linestyle=':', color='blue', linewidth=2*thickness_factor, label='bottleneck router buffer limit')
 		#ax_packets.step(delay_buffer_t, delay_buffer_packets, where='post', color='purple', label='delay buffer', linewidth=thickness_factor)
 
-		ax_packets.axis([plot_start, plot_end, 0, max(buffer_profile[1])*1.1])
+		ax_packets.axis([plot_start, plot_end, 0, max(max(bandwidth_buffer_packets), max(buffer_profile[1]))*1.1])
 		#handles, labels = ax_packets.get_legend_handles_labels()
 		#ax_packets.legend(handles[:3], labels[:3], bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
