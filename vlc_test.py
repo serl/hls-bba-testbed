@@ -215,7 +215,7 @@ if __name__ == "__main__" and 'aqm' in sys.argv[1:]:
 if __name__ == "__main__" and 'var' in sys.argv[1:]:
 	rtt = '200ms'
 	buffer_size = 200
-	algorithms = ('classic-13', 'bba0', 'bba1', 'bba2', 'bba3')
+	algorithms = ('classic-13', 'classic-119', 'bba0', 'bba1', 'bba2', 'bba3', 'bba3-a')
 	bandwidths_coll = [ # actually: fairshare - it will be multiplied by 2 for two-clients tests
 		{0: 4000000, 120: 1000000, 240: 4000000, 360: 600000, 480: 4000000},
 		{0: 4000000, 100: 2800000, 200: 1500000, 300: 1000000, 400: 600000, 500: 4000000},
