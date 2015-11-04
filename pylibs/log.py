@@ -343,6 +343,11 @@ class VLCSession(Session):
 			raise Exception('No sense in trying to measure unfairness. Need exactly 2 clients.')
 		return abs(self.VLClogs[0].get_avg_quality() - self.VLClogs[1].get_avg_quality())
 
+	def get_general_relative_unfairness(self):
+		if len(self.VLClogs) != 2:
+			raise Exception('No sense in trying to measure unfairness. Need exactly 2 clients.')
+		return self.get_general_unfairness() / self.get_fairshare() * 100
+
 	def get_total_measured(self):
 		if not hasattr(self, '_total_measured_cache'):
 			time_relative_to = self.start_time

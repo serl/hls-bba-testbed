@@ -15,7 +15,7 @@ if __name__ == "__main__":
 		try:
 			filename = filename.rstrip(os.sep)
 			run = 1
-			funcs = []
+			sessions = []
 			while True:
 				runpath = os.path.join(filename, str(run))
 				if not os.path.isdir(runpath):
@@ -23,20 +23,18 @@ if __name__ == "__main__":
 					if not os.path.isfile(runpath):
 						break
 				#print "Reading {0} run {1}...".format(filename, run)
-				funcs.append({'args': (runpath,)})
+				sessions.append(Session.read(runpath))
 				run += 1
-			p = Parallelize(funcs, fn=Session.read)
-			p.run()
-			if len(p.results) == 0:
+			if len(sessions) == 0:
 				#print "No runs in {0}".format(filename)
 				continue
 			#print "Analyzing {0}...".format(filename)
-			for i, session in enumerate(p.results):
+			for i, session in enumerate(sessions):
 				for VLClog in session.VLClogs:
 					summary = PlainObject()
 					summary.buffering_fraction = VLClog.get_buffering_fraction()
 					summary.avg_bitrate = VLClog.get_avg_bitrate()
-					summary.avg_bitrate_ratio = float(summary.avg_bitrate) / session.get_fairshare() * 100
+					summary.avg_relative_bitrate = float(summary.avg_bitrate) / session.get_fairshare() * 100
 					summary.avg_quality = VLClog.get_avg_quality()
 					summary.instability = VLClog.get_instability()
 
@@ -55,6 +53,7 @@ if __name__ == "__main__":
 
 					if len(session.VLClogs) > 1:
 						summary.general_unfairness = session.get_general_unfairness()
+						summary.general_relative_unfairness = session.get_general_relative_unfairness()
 						summary.quality_unfairness = session.get_quality_unfairness()
 
 					if len(sessions_summary.runs) < i+1:
@@ -64,19 +63,23 @@ if __name__ == "__main__":
 			print "in {}".format(filename)
 			raise
 
-	result = []
-	for index in ('buffering_fraction', 'avg_bitrate', 'avg_bitrate_ratio', 'avg_quality', 'instability', 'link_utilization', 'avg_router_queue_len', 'avg_relative_router_queue_len', 'avg_relative_rtt', 'general_unfairness', 'quality_unfairness'):
-		run_means = []
-		for run in sessions_summary.runs:
-			try:
-				run_means.append(np.array([s.__dict__[index] for s in run]).mean())
-			except KeyError:
-				continue
-		if len(run_means):
-			result.extend(mean_confidence(run_means))
+	try:
+		result = []
+		for index in ('buffering_fraction', 'avg_bitrate', 'avg_relative_bitrate', 'avg_quality', 'instability', 'link_utilization', 'avg_router_queue_len', 'avg_relative_router_queue_len', 'avg_relative_rtt', 'general_unfairness', 'general_relative_unfairness', 'quality_unfairness'):
+			run_means = []
+			for run in sessions_summary.runs:
+				try:
+					run_means.append(np.array([s.__dict__[index] for s in run]).mean())
+				except KeyError:
+					continue
+			if len(run_means):
+				result.extend(mean_confidence(run_means))
 
-	if os.path.dirname(outfile) is not '':
-		mkdir_p(os.path.dirname(outfile))
-	with open(outfile, 'w') as f:
-		f.write("{0},{1}\n".format(os.path.basename(outfile), ','.join(map(str, result))))
+		if os.path.dirname(outfile) is not '':
+			mkdir_p(os.path.dirname(outfile))
+		with open(outfile, 'w') as f:
+			f.write("{0},{1}\n".format(os.path.basename(outfile), ','.join(map(str, result))))
+	except:
+		print "in {}".format(outfile)
+		raise
 

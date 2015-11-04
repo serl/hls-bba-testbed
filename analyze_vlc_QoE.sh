@@ -24,7 +24,7 @@ for algo in classic-13_keepalive classic-13_keepalive_est classic-119_keepalive 
 			fi
 		done
 	done
-done | parallel --gnu --eta -j5
+done | parallel --gnu --eta -j8
 echo
 echo "$? jobs failed."
 
@@ -38,7 +38,7 @@ for algo in classic-2_keepalive classic-2_keepalive_est classic-23_keepalive cla
 			echo python analyze_vlc_QoE.py $outfile $tests
 		fi
 	done
-done | parallel --gnu --eta -j1
+done | parallel --gnu --eta -j2
 echo
 echo "$? jobs failed."
 
@@ -52,7 +52,7 @@ fi
 
 two_con_files="$TESTDIR/QoE_metrics/two_con_bipbop_200ms_200p_* $TESTDIR/QoE_metrics/two_con_bbb_100ms_200p_* $TESTDIR/QoE_metrics/two_con_bbb_200ms_200p_* $TESTDIR/QoE_metrics/two_con_bbb_400ms_200p_* $TESTDIR/QoE_metrics/two_con_bbb_200ms_100%p_* $TESTDIR/QoE_metrics/two_con_bbb_200ms_50%p_* $TESTDIR/QoE_metrics/two_con_bbb_200ms_25%p_* $TESTDIR/QoE_metrics/two_con_bbb_200ms_10%p_*"
 if exists $two_con_files; then
-	echo "label,rebuffering_ratio,,avg_bitrate,,avg_relative_bitrate,,avg_quality_level,,instability,,link_utilization,,avg_router_queue_len,,avg_relative_router_queue_len,,avg_relative_rtt,,general_unfairness,,quality_unfairness" > $TESTDIR/QoE_metrics/two_con_all
+	echo "label,rebuffering_ratio,,avg_bitrate,,avg_relative_bitrate,,avg_quality_level,,instability,,link_utilization,,avg_router_queue_len,,avg_relative_router_queue_len,,avg_relative_rtt,,general_unfairness,,general_relative_unfairness,,quality_unfairness" > $TESTDIR/QoE_metrics/two_con_all
 	cat $two_con_files >> $TESTDIR/QoE_metrics/two_con_all
 	sed -i '/^$/d' $TESTDIR/QoE_metrics/two_con_all
 fi
