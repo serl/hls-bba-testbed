@@ -1,4 +1,6 @@
-class PlainObject(object): pass
+class PlainObject(object):
+	def __repr__(self):
+		return self.__dict__.__repr__()
 
 import os, errno
 def mkdir_p(path):

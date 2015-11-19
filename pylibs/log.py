@@ -334,18 +334,14 @@ class VLCSession(Session):
 		return wsum/wlen
 
 	def get_general_unfairness(self):
-		if len(self.VLClogs) != 2:
-			raise Exception('No sense in trying to measure unfairness. Need exactly 2 clients.')
-		return abs(self.VLClogs[0].get_avg_bitrate() - self.VLClogs[1].get_avg_bitrate())
+		bitrates = [v.get_avg_bitrate() for v in self.VLClogs]
+		return max(bitrates) - min(bitrates)
 
 	def get_quality_unfairness(self):
-		if len(self.VLClogs) != 2:
-			raise Exception('No sense in trying to measure unfairness. Need exactly 2 clients.')
-		return abs(self.VLClogs[0].get_avg_quality() - self.VLClogs[1].get_avg_quality())
+		qualities = [v.get_avg_quality() for v in self.VLClogs]
+		return max(qualities) - min(qualities)
 
 	def get_general_relative_unfairness(self):
-		if len(self.VLClogs) != 2:
-			raise Exception('No sense in trying to measure unfairness. Need exactly 2 clients.')
 		return self.get_general_unfairness() / self.get_fairshare() * 100
 
 	def get_total_measured(self):
