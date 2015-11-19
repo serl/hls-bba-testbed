@@ -6,21 +6,30 @@ from plot import plotSession
 targz_re = re.compile('^(\d+).tar.gz$')
 if __name__ == "__main__":
 	try:
-		opts, args = getopt(sys.argv[1:], 'se:', ('silent', 'export='))
+		opts, args = getopt(sys.argv[1:], 'se:o:d:', ('silent', 'nodetails', 'export=', 'output_dir=', 'size='))
 		rundir = args[0].rstrip(os.sep)
 		if not os.path.exists(rundir):
 			raise IndexError()
 	except (GetoptError, IndexError):
-		print 'Usage: {} [OPTIONS] <run_directory|run.tar.gz>\n\n-s, --silent suppresses the debugging output\n-e, --export=FORMAT saves the plot in the requested format (pyz, png, ...)'.format(sys.argv[0])
+		print 'Usage: {} [OPTIONS] <run_directory|run.tar.gz>\n\n-s, --silent suppresses the debugging output\n--nodetails do a less detailed plot\n-e, --export=FORMAT saves the plot in the requested format(s), comma delimited (pyz, png, ...)\n-o, --output_dir=DIR saves the plot in the requested directory, instead of in the parent directory of the run_directory\n-d, --size=WIDTHxHEIGHT use these dimensions in inches for the export (defaults to 22x12)'.format(sys.argv[0])
 		sys.exit(1)
 
+	details = True
 	silent = False
 	export = False
+	outdir = None
+	plot_size = (22, 12)
 	for opt, arg in opts:
 		if opt in ("-s", "--silent"):
 			silent = True
+		elif opt in ("--nodetails"):
+			details = False
 		elif opt in ("-e", "--export"):
-			export = arg
+			export = arg.split(',')
+		elif opt in ("-o", "--output_dir"):
+			outdir = arg
+		elif opt in ("-d", "--size"):
+			plot_size = tuple(arg.split('x'))
 
 	run = 0
 	try:
@@ -34,14 +43,19 @@ if __name__ == "__main__":
 			pass
 
 	testdir = os.path.dirname(rundir)
+	testname = os.path.basename(testdir)
+	if outdir is None:
+		outdir = os.path.dirname(testdir)
 
 	try:
 		if not silent:
-			print "Reading {0}...".format(rundir)
+			print "Reading {}...".format(rundir)
 		session = Session.read(rundir)
+		export_files = [os.path.join(outdir, '{}_{}.{}'.format(testname, run, fmt)) for fmt in export] if export else False
 		if not silent:
-			print "Plotting {0}...".format(rundir)
-		plotSession(session, '{}_{}.{}'.format(testdir, run, export) if export else False)
+			export_string = " on {}".format(' and '.join(export_files)) if export_files else ''
+			print "Plotting {}{}...".format(rundir, export_string)
+		plotSession(session, export_files, plot_size=plot_size, details=details)
 	except:
 		print "for run {}".format(rundir)
 		raise

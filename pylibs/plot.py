@@ -48,11 +48,11 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 	for VLClog in session.VLClogs:
 		ax_bits = plt.subplot2grid((subplot_rows, 1), (i, 0), rowspan=2, sharex=ax_bits)
-		ax_bits.set_ylabel('(kbit/s)')
+		ax_bits.set_ylabel('(Mbit/s)')
 
 		#session data
 		for stream in session.streams:
-			ax_bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
+			ax_bits.axhline(stream, alpha=.4, color='black', linestyle='--')
 		bwprofile = session.get_profile('bwprofile')
 		if bwprofile is not None:
 			ax_bits.step(bwprofile[0], bwprofile[1], where='post', marker='.', markersize=1, linestyle=':', color='purple', linewidth=2*thickness_factor, label='total bandwidth')
@@ -63,18 +63,18 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 		vlc_t, vlc_events = VLClog.get_events(time_relative_to=session)
 		vlc_approxbuffer_t, vlc_approxbuffer_v = VLClog.get_events(time_relative_to=session, values_fn=lambda evt: evt.buffer_approx, filter_fn=lambda evt: evt.buffer_approx is not None)
 		for buffering in [e for e in vlc_events if e.buffering][1:]:
-			ax_bits.axvspan(buffering.t - session.start_time, buffering.end - session.start_time, alpha=0.8, linewidth=0, color='red')
+			ax_bits.axvspan(buffering.t - session.start_time, buffering.end - session.start_time, alpha=.8, linewidth=0, color='red')
 		#measured bandwidth
 		ax_bits.step(vlc_t, [evt.downloading_bandwidth for evt in vlc_events], where='post', color='black', label='obtained throughput', linewidth=thickness_factor)
 		if vlc_events[0].avg_bandwidth is not None and max([evt.avg_bandwidth for evt in vlc_events]) != 0:
-			ax_bits.step(vlc_t, [evt.avg_bandwidth for evt in vlc_events], where='post', color='#441e00', alpha=0.7, label='average throughput', linewidth=thickness_factor)
+			ax_bits.step(vlc_t, [evt.avg_bandwidth for evt in vlc_events], where='post', color='#441e00', alpha=.7, label='average throughput', linewidth=thickness_factor)
 		#stream requested
 		stream_requests = [VLClog.streams[evt.downloading_stream] if evt.downloading_stream is not None else None for evt in vlc_events]
 		ax_bits.step(vlc_t, stream_requests, where='post', color='green', label='stream requested', linewidth=thickness_factor)
 		#playout buffer
 		ax_buffer = ax_bits.twinx()
-		#ax_buffer.step(vlc_t, [evt.buffer for evt in vlc_events], where='post', color='#000099', alpha=0.7, linewidth=thickness_factor)
-		ax_buffer.plot(vlc_approxbuffer_t, vlc_approxbuffer_v, color='blue', alpha=0.7, linewidth=thickness_factor)
+		#ax_buffer.step(vlc_t, [evt.buffer for evt in vlc_events], where='post', color='#000099', alpha=.7, linewidth=thickness_factor)
+		ax_buffer.plot(vlc_approxbuffer_t, vlc_approxbuffer_v, color='blue', alpha=.7, linewidth=thickness_factor)
 		ax_buffer.set_ylabel('buffer (s)', color='blue')
 		for tl in ax_buffer.get_yticklabels():
 			tl.set_color('blue')
@@ -82,17 +82,21 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 		ax_bits.axis([plot_start, plot_end, 0, session.max_display_bits*1.1])
 		locs = ax_bits.get_yticks()
-		ax_bits.set_yticklabels(map("{0:.0f}".format, locs/1000))
+		ax_bits.set_yticklabels(map("{0:.1f}".format, locs/1000000))
 		ax_buffer.axis([plot_start, plot_end, 0, None])
 
 		if details:
 			#avg bw, bitrate and instability
 			ax_buffer.text(.99, .01, 'algorithm: {4}, avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s, avg quality: {2:.1f}%, instability: {3:.1f}%'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000, VLClog.get_avg_quality(), VLClog.get_instability(), VLClog.algorithm), transform=ax_buffer.transAxes, weight='semibold', ha='right')
 
+		import matplotlib.patches as mpatches
 		handles, labels = ax_bits.get_legend_handles_labels()
-		handles += [plt.Line2D((0,1),(0,0), alpha=0.4, color='black', linestyle='--'), plt.Line2D((0,1),(0,0), color='blue')]
-		labels += ['nominal bitrates', 'buffer size']
-		ax_bits.legend(handles, labels, fontsize='small').set_zorder(20)
+		handles += [plt.Line2D((0,1),(0,0), alpha=.4, color='black', linestyle='--'), plt.Line2D((0,1),(0,0), color='blue'), mpatches.Patch(color='red', alpha=.8)]
+		labels += ['nominal bitrates', 'buffer size', 'rebuffering events']
+		if details and False:
+			ax_bits.legend(handles, labels, fontsize='small')
+		else:
+			ax_bits.legend(handles, labels, fontsize='small', bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
 		i += 2
 
@@ -103,7 +107,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				ax_bba1bits.set_ylabel('(kbit/s)')
 
 				for stream in (session.streams[0], session.streams[-1]):
-					ax_bba1bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
+					ax_bba1bits.axhline(stream, alpha=.4, color='black', linestyle='--')
 
 				#bwprofile = session.get_profile('bwprofile')
 				#if bwprofile is not None:
@@ -157,7 +161,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				#			startup_start = None
 
 				handles, labels = ax_bba1bits.get_legend_handles_labels()
-				handles += [plt.Line2D((0,1),(0,0), alpha=0.4, color='black', linestyle='--')]
+				handles += [plt.Line2D((0,1),(0,0), alpha=.4, color='black', linestyle='--')]
 				labels += ['nominal bitrates (min, max)']
 				ax_bba1bits.legend(handles, labels, fontsize='small')
 
@@ -177,15 +181,15 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 				ssthresh = [evt.ssthresh if evt.ssthresh < 2147483647 else 0 for evt in tcpp_events]
 				ax_packets.step(tcpp_t, ssthresh, where='post', color='gray', linewidth=thickness_factor)
 				#rtt = [evt.srtt for evt in tcpp_events]
-				#ax_msec.step(tcpp_t, rtt, color='green', alpha=0.5)
+				#ax_msec.step(tcpp_t, rtt, color='green', alpha=.5)
 
 			#for tl in ax_msec.get_yticklabels():
 			#	tl.set_color('green')
 
 			for req_time in VLClog.http_requests:
-				ax_packets.axvline(req_time - session.start_time, alpha=0.8, linestyle=':', linewidth=thickness_factor, color='black')
+				ax_packets.axvline(req_time - session.start_time, alpha=.8, linestyle=':', linewidth=thickness_factor, color='black')
 
-			handles = [plt.Line2D((0,1),(0,0), color='red'), plt.Line2D((0,1),(0,0), color='gray'), plt.Line2D((0,1),(0,0), alpha=0.8, color='black', linestyle=':')]
+			handles = [plt.Line2D((0,1),(0,0), color='red'), plt.Line2D((0,1),(0,0), color='gray'), plt.Line2D((0,1),(0,0), alpha=.8, color='black', linestyle=':')]
 			labels = ['congestion window', 'slow start threshold', 'segment requests']
 			ax_packets.legend(handles, labels, fontsize='small')
 
@@ -243,7 +247,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 					burst_start_idx = idx
 
 			for burst in bursts:
-				ax_packets.axvspan(burst[0], burst[1], alpha=min(0.2+0.8*burst[2]/max_packets, 1), linewidth=0, color='red')
+				ax_packets.axvspan(burst[0], burst[1], alpha=min(.2+.8*burst[2]/max_packets, 1), linewidth=0, color='red')
 
 			#bandwidth_toclients_eth2_t, bandwidth_toclients_eth2_rate = session.bandwidth_eth2_toclients.get_events(time_relative_to=session, values_fn=lambda evt: evt.rate)
 			#ax_rate = ax_packets.twinx()
@@ -332,7 +336,7 @@ def plotCompareSessions(grouped_sessions, export=False):
 		]
 
 	ind = np.arange(len(grouped_sessions[0]['sessions']))
-	width = 0.35
+	width = .35
 
 	plot_id = 0
 	for plot_dict in plots:
@@ -347,7 +351,7 @@ def plotCompareSessions(grouped_sessions, export=False):
 
 		if plot_dict['show_bitrates']:
 			for stream in grouped_sessions[0]['sessions'][0].streams:
-				ax.axhline(stream, alpha=0.4, color='black', linestyle='--')
+				ax.axhline(stream, alpha=.4, color='black', linestyle='--')
 
 		ax.set_xlim(-width,len(ind)+width)
 		#ax.set_ylim(0,45)
@@ -417,11 +421,11 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 	#RTT
 	ax_msec = ax_packets.twinx()
 	rtt = [evt.srtt for evt in tcpprobe_events]
-	ax_msec.step(tcpprobe_t, rtt, color='green', alpha=0.7)
+	ax_msec.step(tcpprobe_t, rtt, color='green', alpha=.7)
 	ax_msec.set_ylabel('RTT (ms)', color='green')
 	for tl in ax_msec.get_yticklabels():
 		tl.set_color('green')
-	ax_msec.axis([plot_start, plot_end, min(rtt)*0.8, max(rtt)*1.2])
+	ax_msec.axis([plot_start, plot_end, min(rtt)*.8, max(rtt)*1.2])
 
 	bw_text = ''
 	for h in ('sender', 'receiver'):
@@ -429,19 +433,19 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 		if tshark:
 			#packet size
 			ax_bytes = fig.add_subplot(3, 1, plot_id, sharex=ax_packets)
-			ax_bytes.step(tshark_framelen_t[h], tshark_framelen[h], marker='.', markersize=2, linestyle=':', color='blue', alpha=0.7)
+			ax_bytes.step(tshark_framelen_t[h], tshark_framelen[h], marker='.', markersize=2, linestyle=':', color='blue', alpha=.7)
 			ax_bytes.set_ylabel('packet size (B)', color='blue')
 			for tl in ax_bytes.get_yticklabels():
 				tl.set_color('blue')
-			ax_bytes.axis([plot_start, plot_end, min(tshark_framelen[h])*0.8, max(tshark_framelen[h])*1.2])
+			ax_bytes.axis([plot_start, plot_end, min(tshark_framelen[h])*.8, max(tshark_framelen[h])*1.2])
 
 			#RTT
 			ax_msec = ax_bytes.twinx()
-			ax_msec.step(tshark_rtt_t[h], tshark_rtt[h], marker='.', markersize=2, linestyle=':', color='green', alpha=0.7)
+			ax_msec.step(tshark_rtt_t[h], tshark_rtt[h], marker='.', markersize=2, linestyle=':', color='green', alpha=.7)
 			ax_msec.set_ylabel('RTT (ms)', color='green')
 			for tl in ax_msec.get_yticklabels():
 				tl.set_color('green')
-			ax_msec.axis([plot_start, plot_end, min(tshark_rtt[h])*0.8, max(tshark_rtt[h])*1.2])
+			ax_msec.axis([plot_start, plot_end, min(tshark_rtt[h])*.8, max(tshark_rtt[h])*1.2])
 
 			#bw
 			ax_bytes.text(plot_end*.99, max(tshark_framelen[h]), '{0} bw: {1:.1f}kbit/s'.format(h, session.__dict__['bandwidth_'+h]/1000), ha='right')
@@ -454,7 +458,7 @@ def plotIperfSession(plt, session, export=False, details=None, plot_start=0, plo
 
 	import matplotlib.patches as mpatches
 	handles, labels = ax_packets.get_legend_handles_labels()
-	handles += [plt.Line2D((0,1),(0,0), alpha=0.7, color='green'), mpatches.Patch(color='red', alpha=.7)]
+	handles += [plt.Line2D((0,1),(0,0), alpha=.7, color='green'), mpatches.Patch(color='red', alpha=.7)]
 	labels += ['RTT', 'dropped packets']
 	ax_packets.legend(handles, labels, fontsize='small')
 
@@ -481,7 +485,7 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 		ax_bits.set_ylabel('(kbit/s)')
 
 		for stream in session.streams:
-			ax_bits.axhline(stream, alpha=0.4, color='black', linestyle='--')
+			ax_bits.axhline(stream, alpha=.4, color='black', linestyle='--')
 
 		bwprofile = session.get_profile('bwprofile')
 		if bwprofile is not None:
@@ -608,7 +612,7 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		ax_fairshare_inst.set_ylabel('instability (%)')
 		ax_fairshare_inst.scatter(fairshare_player, instability, marker='x', s=50*thickness_factor, c=fairshare_player, cmap=cmap)
 		for s in sessions_summary.streams:
-			ax_fairshare_inst.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
+			ax_fairshare_inst.axvline(s/1000, alpha=.4, linewidth=2*thickness_factor, color='black')
 		for i, tag in enumerate(tag_player):
 			ax_fairshare_inst.annotate(tag, (fairshare_player[i], instability[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_fairshare_inst.axis([0, None, 0, None])
@@ -637,7 +641,7 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		ax_fairshare_unfairness.set_ylabel('unfairness (kbit/s)')
 		ax_fairshare_unfairness.scatter(fairshare_session, unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
 		for s in sessions_summary.streams:
-			ax_fairshare_unfairness.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
+			ax_fairshare_unfairness.axvline(s/1000, alpha=.4, linewidth=2*thickness_factor, color='black')
 		for i, tag in enumerate(tag_session):
 			ax_fairshare_unfairness.annotate(tag, (fairshare_session[i], unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_fairshare_unfairness.axis([0, None, 0, None])
@@ -666,7 +670,7 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		ax_fairshare_gunfairness.set_ylabel('general unfairness (kbit/s)')
 		ax_fairshare_gunfairness.scatter(fairshare_session, general_unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
 		for s in sessions_summary.streams:
-			ax_fairshare_gunfairness.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
+			ax_fairshare_gunfairness.axvline(s/1000, alpha=.4, linewidth=2*thickness_factor, color='black')
 		for i, tag in enumerate(tag_session):
 			ax_fairshare_gunfairness.annotate(tag, (fairshare_session[i], general_unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_fairshare_gunfairness.axis([0, None, 0, None])
@@ -695,7 +699,7 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		ax_fairshare_qunfairness.set_ylabel('quality unfairness (%)')
 		ax_fairshare_qunfairness.scatter(fairshare_session, quality_unfairness, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
 		for s in sessions_summary.streams:
-			ax_fairshare_qunfairness.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
+			ax_fairshare_qunfairness.axvline(s/1000, alpha=.4, linewidth=2*thickness_factor, color='black')
 		for i, tag in enumerate(tag_session):
 			ax_fairshare_qunfairness.annotate(tag, (fairshare_session[i], quality_unfairness[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_fairshare_qunfairness.axis([0, None, 0, None])
@@ -724,7 +728,7 @@ def plotScatters(sessions_summary, export=False, export_big=False, thickness_fac
 		ax_fairshare_rrate.set_ylabel('router output rate (%)')
 		ax_fairshare_rrate.scatter(fairshare_session, router_rate, marker='x', s=50*thickness_factor, c=fairshare_session, cmap=cmap)
 		for s in sessions_summary.streams:
-			ax_fairshare_rrate.axvline(s/1000, alpha=0.4, linewidth=2*thickness_factor, color='black')
+			ax_fairshare_rrate.axvline(s/1000, alpha=.4, linewidth=2*thickness_factor, color='black')
 		for i, tag in enumerate(tag_session):
 			ax_fairshare_rrate.annotate(tag, (fairshare_session[i], router_rate[i]), size=thickness_factor*5, xytext=(0, 0), textcoords='offset points', horizontalalignment='center', verticalalignment='center')
 		ax_fairshare_rrate.axis([0, None, 0, None])
