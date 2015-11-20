@@ -48,6 +48,8 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 	for VLClog in session.VLClogs:
 		ax_bits = plt.subplot2grid((subplot_rows, 1), (i, 0), rowspan=2, sharex=ax_bits)
+		if not details:
+			ax_bits.set_xlabel('time (s)')
 		ax_bits.set_ylabel('(Mbit/s)')
 
 		#session data
@@ -87,13 +89,13 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 		if details:
 			#avg bw, bitrate and instability
-			ax_buffer.text(.99, .01, 'algorithm: {4}, avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s, avg quality: {2:.1f}%, instability: {3:.1f}%'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000, VLClog.get_avg_quality(), VLClog.get_instability(), VLClog.algorithm), transform=ax_buffer.transAxes, weight='semibold', ha='right')
+			ax_buffer.text(.99, .01, 'algorithm: {4}, avg bandwidth: {0:.2f}kbit/s, avg bitrate: {1:.2f}kbit/s, avg quality: {2:.1f}%, instability: {3:.1f}%, rebuffering ratio: {5:.1f}%'.format(VLClog.get_avg_bandwidth()/1000, VLClog.get_avg_bitrate()/1000, VLClog.get_avg_quality(), VLClog.get_instability(), VLClog.algorithm, VLClog.get_buffering_fraction()), transform=ax_buffer.transAxes, weight='semibold', ha='right')
 
 		import matplotlib.patches as mpatches
 		handles, labels = ax_bits.get_legend_handles_labels()
 		handles += [plt.Line2D((0,1),(0,0), alpha=.4, color='black', linestyle='--'), plt.Line2D((0,1),(0,0), color='blue'), mpatches.Patch(color='red', alpha=.8)]
 		labels += ['nominal bitrates', 'buffer size', 'rebuffering events']
-		if details and False:
+		if details:
 			ax_bits.legend(handles, labels, fontsize='small')
 		else:
 			ax_bits.legend(handles, labels, fontsize='small', bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
@@ -197,6 +199,7 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 	if details:
 		ax_packets = plt.subplot2grid((subplot_rows, 1), (i, 0), sharex=ax_bits)
+		ax_packets.set_xlabel('time (s)')
 		ax_packets.set_ylabel('(pkts)')
 
 		#buffer
