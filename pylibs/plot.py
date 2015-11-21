@@ -284,6 +284,8 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 
 		i += 1
 
+	if plot_size is not None:
+		plot_size = (float(plot_size[0]), float(plot_size[1]) / 2 * subplot_rows)
 	show(plt, session, fig, export, plot_size)
 
 	plt.close()
