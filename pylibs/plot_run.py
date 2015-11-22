@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	silent = False
 	export = False
 	outdir = None
-	plot_size = (22, 12)
+	plot_size = (22, 6)
 	plot_start = 0
 	plot_end = None
 	for opt, arg in opts:
