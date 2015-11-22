@@ -231,6 +231,8 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			pass
 		ax_packets.text(.99, .02, 'policy: {}, time with empty buffer: {:.1f}%\navg in rate: {}, avg out rate: {}'.format(session.aqm_algorithm, session.get_avg_router_idle(), avg_in_rate, avg_out_rate), transform=ax_packets.transAxes, weight='semibold', ha='right')
 
+		handles, labels = ax_packets.get_legend_handles_labels()
+
 		try:
 			h_sampling_time = session.bandwidth_eth1_toclients.sampling_time/2
 			bandwidth_toclients_eth1_t, bandwidth_toclients_eth1_packets = session.bandwidth_eth1_toclients.get_events(time_relative_to=session, values_fn=lambda evt: evt.packets)
@@ -260,13 +262,13 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			#for tl in ax_rate.get_yticklabels():
 			#	tl.set_color('red')
 
-		except:
-			raise
+			import matplotlib.patches as mpatches
+			handles += [mpatches.Patch(color='red', alpha=.5)]
+			labels += ['density of data from the server']
 
-		import matplotlib.patches as mpatches
-		handles, labels = ax_packets.get_legend_handles_labels()
-		handles += [mpatches.Patch(color='red', alpha=.5)]
-		labels += ['density of data from the server']
+		except AttributeError:
+			pass
+
 		ax_packets.legend(handles, labels, fontsize='small')
 
 		i += 1
