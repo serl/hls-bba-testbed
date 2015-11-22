@@ -516,7 +516,7 @@ def plotCompareVLCRuns(sessions, export=False, thickness_factor=1, size=None):
 					ax_bits.step(vlc_t, [evt.avg_bandwidth for evt in vlc_events], where='post', color=colors[VLClog_idx%len(colors)], alpha=.5, linewidth=thickness_factor/2)
 
 		if i == 0:
-			ax_bits.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=len(session.VLClogs)+1, mode="expand", borderaxespad=0.)
+			ax_bits.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=len(session.VLClogs)+1, mode="expand", borderaxespad=0., fontsize='small')
 
 		if details:
 			ax_bits.text(.99, .01, 'gamma: {0:.2f}, mu: {1:.2f}, instability: {2:.1f}%'.format(session.get_fraction_oneidle(), session.get_fraction_both_overestimating(), VLClog.get_instability()), transform=ax_bits.transAxes, weight='semibold', ha='right')
