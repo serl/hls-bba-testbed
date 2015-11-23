@@ -5,5 +5,5 @@ if [ -z "$1" -o ! -e "$1" ]; then
 	exit 1
 fi
 
-python pylibs/plot_run.py "$1"
+python "$(dirname $0)/pylibs/plot_run.py" "$1"
 

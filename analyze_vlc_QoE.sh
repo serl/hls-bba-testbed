@@ -61,3 +61,12 @@ if exists $two_con_files; then
 	sed -i '/^$/d' $TESTDIR/QoE_metrics/two_con_all.csv
 fi
 
+three_con_files="$TESTDIR/QoE_metrics/three_con_bbb_200ms_100%p_*"
+if exists $three_con_files; then
+	echo "label,rebuffering_ratio,,avg_bitrate,,avg_relative_bitrate,,avg_quality_level,,instability,,link_utilization,,avg_router_queue_len,,avg_relative_router_queue_len,,avg_relative_rtt,,general_unfairness,,general_relative_unfairness,,quality_unfairness" > $TESTDIR/QoE_metrics/three_con_all.csv
+	for f in $three_con_files; do
+		tail -n1 $f >> $TESTDIR/QoE_metrics/three_con_all.csv
+	done
+	sed -i '/^$/d' $TESTDIR/QoE_metrics/three_con_all.csv
+fi
+
