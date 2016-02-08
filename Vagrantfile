@@ -5,7 +5,7 @@ server_memory = 2048
 server_cpus = 2
 server_ip = '192.168.100.10'
 
-routers_memory = 1024
+routers_memory = 2048
 routers_cpus = 2
 routers = {
   "bandwidth" => ['192.168.100.50', '192.168.150.45'],
@@ -13,14 +13,14 @@ routers = {
 }
 
 clients = 3
-clients_memory = 1024
+clients_memory = 2048
 clients_cpus = 2
 clients_ip = '192.168.200'
 
 network_prefix = Dir.pwd[1..-1].gsub('/', '-')
 
-analysis_memory = 22528
-analysis_cpus = 16
+analysis_memory = 12288
+analysis_cpus = 8
 
 Vagrant.configure(2) do |config|
   net_id = 1
@@ -41,7 +41,7 @@ Vagrant.configure(2) do |config|
       vb.memory = server_memory
       vb.cpus = server_cpus
     end
-    
+
     server.vm.provision "shell", inline: "sed -i '/client[0-9]\\+/d' /etc/hosts", run: "always"
     (0...clients).each do |i|
       hostname = "client#{i}"
@@ -131,4 +131,3 @@ Vagrant.configure(2) do |config|
   end
 
 end
-
