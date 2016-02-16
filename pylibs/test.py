@@ -151,18 +151,17 @@ class BwChange(Event):
 		test.bw_profile[self.delay] = bw_convert(self.bw)
 		test.buffer_profile[self.delay] = router_buffer_convert(self.buffer_size, self.bw, self.rtt)
 		if test.aqm_algorithm == 'droptail':
-			return '{0} {1} /vagrant/code/tc_helper.sh set_bw {2} {3} {4}'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt)
+			return '{0} {1} /vagrant/code/tc_helper.sh set_bw {2} {3} {4} 2>&1'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt)
 		else:
-			return '{0} {1} /vagrant/code/tc_helper.sh set_bw_aqm {5} {2} {3} {4}'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt, test.aqm_algorithm)
+			return '{0} {1} /vagrant/code/tc_helper.sh set_bw_aqm {5} {2} {3} {4} 2>&1'.format(self.host, self.delay, self.bw, self.buffer_size, self.rtt, test.aqm_algorithm)
 
 class TrafficControlCleanup(CleanupEvent):
 	def commands(self, test):
-		return '{0} {1} /vagrant/code/tc_helper.sh destroy'.format(self.host, self.delay)
+		return '{0} {1} /vagrant/code/tc_helper.sh destroy 2>&1'.format(self.host, self.delay)
 
 class DelayChange(Event):
 	packet_delay='200ms'
 	host='delay'
 	def commands(self, test):
 		test.delay_profile[self.delay] = delay_convert(self.packet_delay)
-		return '{0} {1} /vagrant/code/tc_helper.sh set_delay {2}'.format(self.host, self.delay, self.packet_delay)
-
+		return '{0} {1} /vagrant/code/tc_helper.sh set_delay {2} 2>&1'.format(self.host, self.delay, self.packet_delay)
