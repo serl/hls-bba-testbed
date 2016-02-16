@@ -77,7 +77,7 @@ if __name__ == "__main__":
 		for bandwidths in bandwidths_coll:
 			t = Test(name='v{:02d}_{}_{}_{}_{}'.format(num, n_clients, settings.video_label, algo, get_curl_label(curl)), collection=collection, packet_delay=rtt, aqm_algorithm=aqm)
 			for d, bw in bandwidths.iteritems():
-				t.add_event(BwChange(delay=d, bw=bw*2, buffer_size=buffer_size, rtt=rtt))
+				t.add_event(BwChange(delay=d, bw=bw*n_clients, buffer_size=buffer_size, rtt=rtt))
 			t.add_event(TcpDump(host='bandwidth', iface='eth1'))
 			t.add_event(TcpDump(host='bandwidth', iface='eth2'))
 			for client_id in range(n_clients):
