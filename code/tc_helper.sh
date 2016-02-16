@@ -132,7 +132,10 @@ function set_bw_aqm {
 			buffer=$((buffer * mss))
 			red_min=$((buffer / 6))
 			red_max=$((buffer / 2))
-			run_command qdisc replace parent 1:1 handle 20:0 red limit $buffer min $red_min max $red_max avpkt 1000 adaptive bandwidth "$bw_bits" && \
+			red_avpkt=1000
+			burst=$(( (red_min + red_min + red_max)/(3 * red_avpkt) ))
+			[ "$burst" -le "0" ] && echo "You're probably run into troubles with ARED."
+			run_command qdisc replace parent 1:1 handle 20:0 red limit $buffer min $red_min max $red_max avpkt $red_avpkt adaptive bandwidth "$bw_bits" && \
 			echo "Added $aqm AQM to hbf qdisc (buffer of $buffer bytes)"
 			;;
 		codel)
