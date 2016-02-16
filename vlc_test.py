@@ -11,7 +11,7 @@ settings.video_url = bigbuckbunny8_url
 settings.kill_after = 700
 settings.rtt = ('20ms', '80ms')
 settings.rtt_zfill = 4
-settings.buffer_size = ('25%', '50%', '100%', '600%')
+settings.buffer_size = ('25%', '50%', '100%', '600%') #won't be given directly to tc_helper, but will pass through get_bdp_fraction
 settings.buffer_size_zfill = 4
 settings.fairshare = range(600, 3001, 300)
 settings.aqm = ('droptail', 'ared', 'codel')
@@ -36,14 +36,18 @@ def get_algocurl_tuples(algorithms, curl_tuple):
 			tuples.append((algo, curl))
 	return set(tuples)
 
+from pylibs.test import delay_convert, router_buffer_convert
+def get_bdp_fraction(rtt, bandwidth, fraction): #in packets
+	rtt_ms = delay_convert(rtt)
+	if rtt_ms == 20:
+		bandwidth = '50mbit'
+	elif rtt_ms == 80:
+		bandwidth = '10mbit'
+	return router_buffer_convert(fraction, bandwidth, rtt)
+
 def add_tcpdump(t):
 	t.add_event(TcpDump(host='bandwidth', iface='eth1'))
 	t.add_event(TcpDump(host='bandwidth', iface='eth2'))
-
-# for buffer_size in settings.buffer_size:
-# 	for rtt in settings.rtt:
-# 		for (algo, curl) in get_algocurl_tuples(settings.algorithms, settings.curl):
-# 			for n_clients in settings.clients:
 
 if __name__ == "__main__":
 	for (buffer_size, rtt, (algo, curl), n_clients, aqm) in itertools.product(settings.buffer_size, settings.rtt, get_algocurl_tuples(settings.algorithms, settings.curl), settings.clients, settings.aqm):
@@ -57,7 +61,7 @@ if __name__ == "__main__":
 		num = 1
 		for bw_kbits in settings.fairshare:
 			bw = str(bw_kbits*n_clients)+'kbit'
-			bwchange = BwChange(bw=bw, buffer_size=buffer_size, rtt=rtt)
+			bwchange = BwChange(bw=bw, buffer_size=get_bdp_fraction(rtt, bw, buffer_size), rtt=rtt)
 			t = Test(name='c{:02d}_{}_{}_{}_{}_{}'.format(num, n_clients, settings.video_label, bw, algo, get_curl_label(curl)), collection=collection, init_bw=bwchange, packet_delay=rtt, aqm_algorithm=aqm)
 			t.add_event(TcpDump(host='bandwidth', iface='eth1'))
 			t.add_event(TcpDump(host='bandwidth', iface='eth2'))
@@ -77,7 +81,7 @@ if __name__ == "__main__":
 		for bandwidths in bandwidths_coll:
 			t = Test(name='v{:02d}_{}_{}_{}_{}'.format(num, n_clients, settings.video_label, algo, get_curl_label(curl)), collection=collection, packet_delay=rtt, aqm_algorithm=aqm)
 			for d, bw in bandwidths.iteritems():
-				t.add_event(BwChange(delay=d, bw=bw*n_clients, buffer_size=buffer_size, rtt=rtt))
+				t.add_event(BwChange(delay=d, bw=bw*n_clients, buffer_size=get_bdp_fraction(rtt, bw, buffer_size), rtt=rtt))
 			t.add_event(TcpDump(host='bandwidth', iface='eth1'))
 			t.add_event(TcpDump(host='bandwidth', iface='eth2'))
 			for client_id in range(n_clients):
