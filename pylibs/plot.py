@@ -191,8 +191,32 @@ def plotVLCSession(plt, session, export=False, details=True, plot_start=0, plot_
 			for req_time in VLClog.http_requests:
 				ax_packets.axvline(req_time - session.start_time, alpha=.8, linestyle=':', linewidth=thickness_factor, color='black')
 
-			handles = [plt.Line2D((0,1),(0,0), color='red'), plt.Line2D((0,1),(0,0), color='gray'), plt.Line2D((0,1),(0,0), alpha=.8, color='black', linestyle=':')]
-			labels = ['congestion window', 'slow start threshold', 'segment requests']
+			#dropped_packets
+			dropped_packets_t, dropped_packets_events = VLClog.dropped_packets.get_events(time_relative_to=session)
+			for drop_at in dropped_packets_t:
+				ax_packets.axvline(drop_at, ymax=.1, ymin=0, linewidth=thickness_factor, color='red')
+
+			packet_groups_t, packet_groups_events = VLClog.packet_groups.get_events(time_relative_to=session)
+			for drop_at in dropped_packets_t:
+				ax_packets.axvline(drop_at, ymax=.1, ymin=0, linewidth=thickness_factor, color='red')
+
+			for dropped_packet in VLClog.dropped_packets.events.values():
+				color = 'black'
+				if dropped_packet.type == 'B':
+					color = 'green'
+				if dropped_packet.type == 'T':
+					color = 'blue'
+				ax_packets.axvline(dropped_packet.t - session.start_time, ymax=.1, ymin=0, linewidth=thickness_factor, color=color)
+
+			# for packet_group in VLClog.packet_groups.events.values():
+			# 	if packet_group.type == 'B':
+			# 		color = 'green'
+			# 	else:
+			# 		color = 'blue'
+			# 	ax_packets.axvspan(packet_group.t - session.start_time, packet_group.end - session.start_time, ymax=1, ymin=0.98, alpha=.8, linewidth=1, color=color)
+
+			handles = [plt.Line2D((0,1),(0,0), color='red'), plt.Line2D((0,1),(0,0), color='gray'), plt.Line2D((0,1),(0,0), alpha=.8, color='black', linestyle=':'), plt.Line2D((0,1),(0,0), color='black'), plt.Line2D((0,1),(0,0), color='green'), plt.Line2D((0,1),(0,0), color='blue')]
+			labels = ['congestion window', 'slow start threshold', 'segment requests', 'pkt dropped on clocking', 'pkt dropped on burst', 'pkt dropped on trailing']
 			ax_packets.legend(handles, labels, fontsize='small')
 
 			i += 1
@@ -799,4 +823,3 @@ if __name__ == '__main__':
 	import sys
 	sys.modules['pylibs.log'] = log #bad hack
 	open_pickle(sys.argv[1])
-

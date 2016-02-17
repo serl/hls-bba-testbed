@@ -6,6 +6,16 @@ class LogEvent(object):
 	def __repr__(self):
 		return repr(self.__dict__)
 
+def client_ip(hostname):
+	ip_re = re.compile('^\d+\.\d+\.\d+\.\d+$')
+	client_re = re.compile('^client(\d+)$')
+	if ip_re.match(hostname):
+		return hostname
+	match = client_re.match(hostname)
+	if match:
+		return '192.168.200.' + str(10 + int(match.group(1)))
+	raise Exception("Unable to recognise client Hostname/IP Address")
+
 class Log(object):
 	def __init__(self):
 		self.events = {}
@@ -522,6 +532,8 @@ class VLCSession(Session):
 
 		funcs = []
 		funcs.append({'fn': TcpProbeLog.parse, 'args': (os.path.join(rundir, 'cwnd.log'),), 'return_attr': 'tcpprobe'})
+		funcs.append({'fn': TsharkDroppedPackets.parse, 'args': (os.path.join(rundir, 'dropped_packets'),), 'return_attr': 'dropped_packets' })
+		funcs.append({'fn': PacketGroups.parse, 'args': (os.path.join(rundir, 'packet_groups.csv'),), 'return_attr': 'packet_groups' })
 		for h in ('bandwidth', 'delay'):
 			funcs.append({'fn': RouterBufferLog.parse, 'args': (os.path.join(rundir, h+'_buffer.log'),), 'return_attr': h+'_buffer'})
 			for iface in ('eth1', 'eth2'):
@@ -554,6 +566,8 @@ class VLCSession(Session):
 						try:
 							log = inst._addvlclog(log_filename)
 							log.tcpprobe = inst.tcpprobe.filter_by_ip(client['host'])
+							log.dropped_packets = inst.dropped_packets.filter_by_ip(client['host'])
+							log.packet_groups = inst.packet_groups.filter_by_ip(client['host'])
 						except Exception, e:
 							print traceback.format_exc()
 					continue
@@ -595,12 +609,7 @@ class TcpProbeLog(Log):
 		return self._instances_cache
 
 	def filter_by_ip(self, ip):
-		ip_re = re.compile('^\d+\.\d+\.\d+\.\d+$')
-		client_re = re.compile('^client(\d+)$')
-		if not ip_re.match(ip):
-			match = client_re.match(ip)
-			if match:
-				ip = '192.168.200.' + str(10 + int(match.group(1)))
+		ip = client_ip(ip)
 		inst = self.__class__()
 		inst.events = {t: evt for t, evt in self.events.iteritems() if evt.dst == ip}
 		inst.adjust_time()
@@ -764,10 +773,17 @@ class TsharkPacketsToClients(Log):
 		return inst
 
 class TsharkDroppedPackets(Log):
+	def filter_by_ip(self, ip):
+		ip = client_ip(ip)
+		inst = self.__class__()
+		inst.events = {t: evt for t, evt in self.events.iteritems() if evt.dst == ip}
+		inst.adjust_time()
+		return inst
+
 	@classmethod
 	def parse(cls, filename):
 		inst = cls()
-		line_re = re.compile('^([\d\.]+),([\d\.]+),(\d+),([\d\.]+),(\d+),(\d+),(\d+)$')
+		line_re = re.compile('^([\d\.]+),([\d\.]+),(\d+),([\d\.]+),(\d+),(\d+),(\d+),([BCT])$')
 		with open(filename, "r") as contents:
 			for line in contents:
 				match = line_re.match(line)
@@ -780,6 +796,41 @@ class TsharkDroppedPackets(Log):
 					evt.dst_port = int(match.group(5))
 					evt.len = int(match.group(6))
 					evt.seq = int(match.group(7))
+					evt.type = match.group(8)
+					inst.events[evt.t] = evt
+					continue
+
+		inst.adjust_time()
+		return inst
+
+class PacketGroups(Log):
+	def filter_by_ip(self, ip):
+		ip = client_ip(ip)
+		inst = self.__class__()
+		inst.events = {t: evt for t, evt in self.events.iteritems() if evt.dst == ip}
+		inst.adjust_time()
+		return inst
+
+	@classmethod
+	def parse(cls, filename):
+		inst = cls()
+		line_re = re.compile('^(B|T),([\d\.]+),(\d+),([\d\.]+),(\d+),([\d\.]+),([\d\.]+),(\d+),(\d+),(\d+)$')
+		with open(filename, "r") as contents:
+			for line in contents:
+				match = line_re.match(line)
+				if match:
+					evt = LogEvent()
+					evt.type = match.group(1)
+					evt.src = match.group(2)
+					evt.src_port = int(match.group(3))
+					evt.dst = match.group(4)
+					evt.dst_port = int(match.group(5))
+					evt.t = float(match.group(6))
+					evt.end = float(match.group(7))
+					#evt.duration = evt.end - evt.t
+					evt.seq = int(match.group(8))
+					evt.seq_end = int(match.group(9))
+					evt.packets = int(match.group(10))
 					inst.events[evt.t] = evt
 					continue
 
@@ -862,4 +913,3 @@ class IperfSession(Session):
 					continue
 
 		return inst
-
