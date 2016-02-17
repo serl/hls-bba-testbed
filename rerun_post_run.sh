@@ -14,6 +14,6 @@ fi
 
 for rundir in "$@"; do echo /vagrant/$rundir; done |
 vagrant ssh server -- bash -c "'
-	parallel --gnu -j2 --eta /vagrant/code/post_run.sh
+	parallel --gnu -j2 --eta /vagrant/code/post_run.sh > /vagrant/rerun_post.log
 	echo -e "\\\\n\$? jobs failed."
 '"
