@@ -10,6 +10,11 @@ TSHARK_FIELDS="-e ip.src -e tcp.srcport -e ip.dst -e tcp.dstport -e tcp.len -e t
 OUT_FILE="$RUN_PATH/dropped_packets"
 PACKETGROUPS_OUT_FILE="$RUN_PATH/packet_groups.csv"
 
+if [ -e "$OUT_FILE" ] && [ -e "$PACKETGROUPS_OUT_FILE" ]; then
+	echo "Skipping dropped packet analysis"
+	exit 0
+fi
+
 unsorted_out_file="$RUN_PATH/dropped_packets_unsorted"
 rm $unsorted_out_file &>/dev/null
 
