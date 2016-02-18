@@ -10,10 +10,6 @@ TSHARK_FIELDS="-e ip.src -e tcp.srcport -e ip.dst -e tcp.dstport -e tcp.len -e t
 OUT_FILE="$RUN_PATH/dropped_packets"
 PACKETGROUPS_OUT_FILE="$RUN_PATH/packet_groups.csv"
 
-#avoid files with size 0
-[ -s "$OUT_FILE" ] || rm "$OUT_FILE" &>/dev/null
-[ -s "$PACKETGROUPS_OUT_FILE" ] || rm "$PACKETGROUPS_OUT_FILE" &>/dev/null
-
 if [ -e "$OUT_FILE" ] && [ -e "$PACKETGROUPS_OUT_FILE" ]; then
 	echo "Skipping dropped packet analysis"
 	exit 0
@@ -49,6 +45,7 @@ echo "Done processing OUT interface.") &
 
 wait
 
+touch "$unsorted_out_file"
 diff "$in_temp" "$out_temp" | grep '^<' | cut -d' ' -f2- | \
 while IFS= read -r line; do
 	grep -E "^[0-9.]+,$line,[BCT]\$" "$in_temp_time" | head -n-1 >>"$unsorted_out_file" || echo "Error calculating dropped packets on $RUN_PATH" >&2

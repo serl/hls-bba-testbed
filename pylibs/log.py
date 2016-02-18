@@ -22,10 +22,15 @@ class Log(object):
 		self.start_time = None
 		self.end_time = None
 		self.duration = 0
+		self.can_be_empty = False
 	def adjust_time(self):
-		self.start_time = min(self.events)
-		self.end_time = max(self.events)
-		self.duration = self.end_time - self.start_time
+		try:
+			self.start_time = min(self.events)
+			self.end_time = max(self.events)
+			self.duration = self.end_time - self.start_time
+		except ValueError:
+			if not self.can_be_empty:
+				raise
 	def get_events(self, values_fn=lambda evt: evt, filter_fn=lambda evt: True, time_relative_to=0, time_fn=None):
 		if time_fn is None:
 			if Session in type(time_relative_to).__bases__:
@@ -776,6 +781,7 @@ class TsharkDroppedPackets(Log):
 	def filter_by_ip(self, ip):
 		ip = client_ip(ip)
 		inst = self.__class__()
+		inst.can_be_empty = True
 		inst.events = {t: evt for t, evt in self.events.iteritems() if evt.dst == ip}
 		inst.adjust_time()
 		return inst
@@ -783,6 +789,7 @@ class TsharkDroppedPackets(Log):
 	@classmethod
 	def parse(cls, filename):
 		inst = cls()
+		inst.can_be_empty = True
 		line_re = re.compile('^([\d\.]+),([\d\.]+),(\d+),([\d\.]+),(\d+),(\d+),(\d+),([BCT])$')
 		with open(filename, "r") as contents:
 			for line in contents:
