@@ -153,4 +153,8 @@ if __name__ == "__main__":
 		elif opt in ("--packetgroups"):
 			packetgroups_file_path = arg
 
-	parse(acksfiles, in_tempfile_path, in_tempfile_time_path, packetgroups_file_path)
+	try:
+		parse(acksfiles, in_tempfile_path, in_tempfile_time_path, packetgroups_file_path)
+	except:
+		print "While generating {}".format(packetgroups_file_path)
+		raise
