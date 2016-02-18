@@ -10,10 +10,19 @@ TSHARK_FIELDS="-e ip.src -e tcp.srcport -e ip.dst -e tcp.dstport -e tcp.len -e t
 OUT_FILE="$RUN_PATH/dropped_packets"
 PACKETGROUPS_OUT_FILE="$RUN_PATH/packet_groups.csv"
 
+#avoid files with size 0
+[ -s "$OUT_FILE" ] || rm "$OUT_FILE" &>/dev/null
+[ -s "$PACKETGROUPS_OUT_FILE" ] || rm "$PACKETGROUPS_OUT_FILE" &>/dev/null
+
 if [ -e "$OUT_FILE" ] && [ -e "$PACKETGROUPS_OUT_FILE" ]; then
 	echo "Skipping dropped packet analysis"
 	exit 0
 fi
+
+function cleanup {
+	rm "$in_temp_complete" "$in_temp_acks"* "$in_temp_time" "$in_temp" "$out_temp" "$unsorted_out_file"
+}
+trap cleanup EXIT
 
 unsorted_out_file="$RUN_PATH/dropped_packets_unsorted"
 rm $unsorted_out_file &>/dev/null
@@ -45,8 +54,4 @@ while IFS= read -r line; do
 	grep -E "^[0-9.]+,$line,[BCT]\$" "$in_temp_time" | head -n-1 >>"$unsorted_out_file" || echo "Error calculating dropped packets on $RUN_PATH" >&2
 done
 
-sort "$unsorted_out_file" > "$OUT_FILE"
-
-rm "$in_temp_complete" "$in_temp_acks"* "$in_temp_time" "$in_temp" "$out_temp" "$unsorted_out_file"
-
-exit 0
+sort -o "$OUT_FILE" "$unsorted_out_file"
