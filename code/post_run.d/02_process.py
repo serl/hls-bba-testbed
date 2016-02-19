@@ -68,7 +68,11 @@ def parse(acksfiles, in_tempfile_path, in_tempfile_time_path, packetgroups_file_
 				burst = None
 				trailing = None
 				for line in acksfile:
-					p = Packet(line)
+					try:
+						p = Packet(line)
+					except ValueError:
+						print "Malformed line for {}:\n{}".format(packetgroups_file_path, line.rstrip())
+						continue
 
 					if p.is_packet():
 						wo_time = p.get_wo_time() + '\n'
@@ -83,14 +87,12 @@ def parse(acksfiles, in_tempfile_path, in_tempfile_time_path, packetgroups_file_
 						if trailing is not None:
 							if trailing.packets > 5 and trailing.end_seq - trailing.start_seq > 0:
 								trailings.append(trailing)
-								#print stream, (burst.end_time - burst.start_time)*1000
 							trailing = None
 
 					elif p.is_ack():
 						if burst is not None:
 							if burst.packets > 5 and burst.end_time - burst.start_time < 0.018:
 								bursts.append(burst)
-								#print stream, (burst.end_time - burst.start_time)*1000
 							burst = None
 
 						if trailing is None:
@@ -103,7 +105,11 @@ def parse(acksfiles, in_tempfile_path, in_tempfile_time_path, packetgroups_file_
 
 			with open(acksfile_path, 'r') as acksfile:
 				for line in acksfile:
-					p = Packet(line)
+					try:
+						p = Packet(line)
+					except ValueError:
+						print "Malformed line for {}:\n{}".format(packetgroups_file_path, line.rstrip())
+						continue
 
 					if p.is_packet():
 						line_towrite = p.time + ',' + p.get_wo_time()
@@ -117,20 +123,6 @@ def parse(acksfiles, in_tempfile_path, in_tempfile_time_path, packetgroups_file_
 								label = 'B'
 								break
 						in_tempfile_time.write(line_towrite + ',' + label + '\n')
-
-			# with open(acksfile_path, 'r') as acksfile, open('DEBUG_' + acksfile_path, 'w') as acksfile_debug:
-			# 	for line in acksfile:
-			# 		line = line.rstrip()
-			# 		(t, stream, src_ip, src_port, dst_ip, dst_port, pkt_len, pkt_seq, pkt_ack) = line.split(',')
-			# 		if src_port == '3000' and pkt_len != '0':
-			# 			int_pkt_seq = int(pkt_seq)
-			# 			for i, burst in enumerate(bursts):
-			# 				if int_pkt_seq >= burst.start_seq and int_pkt_seq < burst.end_seq:
-			# 					line += ',B'+str(i)
-			# 			for i, trailing in enumerate(trailings):
-			# 				if int_pkt_seq >= trailing.start_seq and int_pkt_seq < trailing.end_seq:
-			# 					line += ',T'+str(i)
-			# 		acksfile_debug.write(line+'\n')
 
 if __name__ == "__main__":
 	try:
