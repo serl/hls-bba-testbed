@@ -1,3 +1,7 @@
+# python hls-size-helper.py <hls_playlist>
+# it will add the custom EXT-X-SIZE header on the playlist
+# output on stdout
+
 import re, os
 
 def add_size(filename):
@@ -15,17 +19,3 @@ if __name__ == '__main__':
 	import sys
 	filename = sys.argv[1]
 	print add_size(filename)
-
-
-
-
-#while IFS='' read -r line || [[ -n $line ]]; do
-#	if [[ $line =~ ^\# ]]; then
-#		continue
-#	fi
-	#echo -e "#EXTINF:9.97667,\t" #BipBop
-	#echo "#EXTINF:10," #tears of steel
-	#echo "#EXT-X-SIZE:$(wc -c <"$line")"
-#	echo "__${line}__"
-#done < "$(basename "$1")"
-
