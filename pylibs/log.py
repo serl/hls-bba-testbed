@@ -786,6 +786,19 @@ class TsharkDroppedPackets(Log):
 		inst.adjust_time()
 		return inst
 
+	def get_statistics(self):
+		burst = 0
+		clocking = 0
+		trailing = 0
+		for evt in self.events.values():
+			if evt.type == 'B':
+				burst += 1
+			elif evt.type == 'C':
+				clocking += 1
+			elif evt.type == 'T':
+				trailing += 1
+		return (burst, clocking, trailing)
+
 	@classmethod
 	def parse(cls, filename):
 		inst = cls()
