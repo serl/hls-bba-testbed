@@ -2,15 +2,16 @@ import sys, os, errno, json
 from pylibs.generic import mkdir_p
 from pylibs.test import router_buffer_convert
 
-aqm_algorithms=('droptail', 'ared', 'codel')
-delay="200ms"
-
-tests = (
+# the parameters for the tests
+aqm_algorithms=('droptail', 'ared', 'codel') # router buffer policies
+delay="200ms" # enforced delay
+tests = ( # where bw is the enforced bandwidth, buffersize is the router buffer upper limits, time is the iperf execution time
 	#{ 'bw': '300kbit', 'buffersize': ('200%', '100%'), 'time': 300 },
 	{ 'bw': '1mbit', 'buffersize': ('200', '200%', '100%', '50%'), 'time': 240 },
 	{ 'bw': '5mbit', 'buffersize': ('200', '200%', '100%', '50%'), 'time': 120 },
 	{ 'bw': '10mbit', 'buffersize': ('200', '200%', '100%', '50%'), 'time': 60 },
 )
+# end parameters
 
 for aqm_algorithm in aqm_algorithms:
 	for i, test in enumerate(tests):
@@ -58,4 +59,3 @@ server 5 iperf -c client0 -t {interval} &>$LOGDIR/iperf_c.log
 			mkdir_p(save_dir)
 			with open(os.path.join(save_dir, 'jobs.sched'), 'w') as f:
 				f.write(scheduler_commands)
-
